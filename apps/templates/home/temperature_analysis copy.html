@@ -1,0 +1,211 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Dashboard {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+    <main>
+        <div class="container-fluid px-4">
+            <h1 class="mt-4">Temperature Analysis</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item active">This page can be used to analyze temperature data captured by NOAA at or across various Virginia Weather Stations.</li>
+            </ol>
+            
+
+                        <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-filter me-1"></i>
+                    Data Filters
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                    <div class="col-md-2">
+                        <form method="post" id="multiple_select_form2">
+                        <a>Select Weather Station(s)</a>
+                        <select  name="Station_Select2" id = "Station_Select2" class="form-control selectpicker"  method="post"  multiple data-live-search="true"  >
+                            {% for station in stations %}
+                               <option name = "{{station}}" value= "{{station}}" SELECTED>{{station}}</option>
+                               {% endfor %}
+                               </select>    
+                        </div>                       
+                           
+                    <div class="col-md-2">
+                    <div title="Your title here2!">Select Start Date</div>
+                    
+                    <input type="date" id="start2" name="rain-start2"
+                           value="{{min_date}}"
+                           min="{{min_date}}" max="{{max_date}}">
+                        </div>
+                    
+                    <div class="col-sm-1">
+                    <div title="Your title here!">Select End Date</div>
+                    <input type="date" id="end2" name="rain-end2"
+                                  value="{{max_date}}"
+                                  min="{{min_date}}" max="{{max_date}}">
+
+                    </div>
+                    <div class="col-md-2"></div>
+                    <div class="col-md-2">
+                        <div title="Your title here!">Refresh Data</div>
+                        <input class= "btn btn-success" type = submit value = Submit><!--<input type = submit value = Submit>--> 
+                        </div>
+                      </form>
+                </div>
+                
+                         
+                </div>
+            </div>
+            
+                       
+
+            <div class="row">
+                <div class="col-xl-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-chart-area me-1"></i>
+                            Temperature Over Time
+                        </div>
+                        <div class="card-body"><canvas id="temp_over_time" width="100%" height="40"></canvas></div>
+                        <!-- START OF SCRIPT-->
+                        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
+
+                        <script>
+                            var ctx = document.getElementById("temp_over_time");
+var myLineChart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: {{ date_range | safe }},
+    datasets: [{
+      label: "Avg Temp",
+      lineTension: 0.3,
+      //backgroundColor: "rgba(0,0,0)",
+      borderColor: "rgba(73,82,91)",
+      pointRadius: 5,
+      pointBackgroundColor: "rgba(73,82,91)",
+      pointBorderColor: "rgba(73,82,89)",
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: "rgba(73,82,91)",
+      pointHitRadius: 50,
+      pointBorderWidth: 2,
+      data: {{ df_values_avg | safe }}
+    },
+    {
+      label: "Max Temp",
+      lineTension: 0.3,
+      //backgroundColor: "rgba(255, 0, 0, 0.2)",
+      borderColor: "rgba(255, 0, 0, 0.4)",
+      pointRadius: 5,
+      pointBackgroundColor: "rgba(255, 0, 0, 0.4)",
+      pointBorderColor: "rgba(255, 0, 0, 0.3)",
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: "rgba(255, 0, 0, 0.4)",
+      pointHitRadius: 50,
+      pointBorderWidth: 2,
+      data: {{ df_values_max | safe }}
+    },
+    {
+      label: "Min Temp",
+      lineTension: 0.3,
+      //backgroundColor: "rgba(2,117,216,0.2)",
+      borderColor: "rgba(2,117,216,1)",
+      pointRadius: 5,
+      pointBackgroundColor: "rgba(2,117,216,1)",
+      pointBorderColor: "rgba(255,255,255,0.8)",
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: "rgba(2,117,216,1)",
+      pointHitRadius: 50,
+      pointBorderWidth: 2,
+      data: {{ df_values_min | safe }}
+    }],
+  },
+  options: {
+    scales: {
+      xAxes: [{
+        time: {
+          unit: 'date'
+        },
+        gridLines: {
+          display: false
+        },
+        ticks: {
+          maxTicksLimit: 7
+        }
+      }],
+      yAxes: [{
+        ticks: {
+          min: 0,
+          max: {{ temp_max_axis | safe}},
+          maxTicksLimit: 5
+        },
+        gridLines: {
+          color: "rgba(0, 0, 0, .125)",
+        }
+      }],
+    },
+    legend: {
+      display: false
+    }
+  }
+});
+
+                        </script>
+
+                        <!-- END OF SCRIPT -->
+                    </div>
+                </div>
+                <div class="col-xl-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-chart-bar me-1"></i>
+                            Bar Chart Example
+                        </div>
+                        <div class="card-body"><canvas id="myBarChart" width="100%" height="40"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xl-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-chart-area me-1"></i>
+                            Area Chart Example
+                        </div>
+                        <div class="card-body"><canvas id="myAreaChart" width="100%" height="40"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-xl-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-chart-bar me-1"></i>
+                            Bar Chart Example
+                        </div>
+                        <div class="card-body"><canvas id="myBarChart" width="100%" height="40"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </main>
+    
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
+    <script src="/static/assets/demo/chart-area-demo.js"></script>
+    <script src="/static/assets/demo/chart-bar-demo.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" crossorigin="anonymous"></script>
+    <script src="/static/assets/js/datatables-simple-demo.js"></script>
+
+    <script>
+        $document.ready(function()) {
+            $('.selectpicker').selectpicker();
+        }
+    </script>
+
+{% endblock javascripts %}
