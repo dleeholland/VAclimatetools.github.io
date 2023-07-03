@@ -24,34 +24,34 @@ import pandas as pd
 from datetime import datetime
 import os
 
-weather_data = pd.read_csv(os.path.join(app.root_path,'data','VA GHCND 2019_06_01_2023.csv'))
-weather_data['DATE'] = pd.to_datetime(weather_data['DATE'])
-desc_cols = ['STATION',
-             'NAME',
-             'LATITUDE',
-             'LONGITUDE',
-             'ELEVATION',
-             'DATE']
+weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_clean_extract.csv'))
+weather_data['DATE'] = pd.to_datetime(dict(year=weather_data.year, month=weather_data.MONTH, day=weather_data.DAY))
 
-temp_cols = ['TAVG',
-             'TAVG_ATTRIBUTES',
-             'TMAX',
-             'TMAX_ATTRIBUTES',
-             'TMIN',
-             'TMIN_ATTRIBUTES',
-             'TOBS',
-             'TOBS_ATTRIBUTES']
+# Correct Max / Min Temp days
+# Where MAX/MIN are both null or 999.9 = Min/Max = Avg
+weather_data.loc[ (weather_data['MIN_TEMP']==9999.9) & (weather_data['MAX_TEMP'] == 9999.9),['MIN_TEMP','MAX_TEMP']] = weather_data['AVG_TEMP']
+# Where MAX/AVG are known but MIN is not....calculate MIN
+weather_data.loc[ (weather_data['MIN_TEMP']==9999.9) & (weather_data['MAX_TEMP'] != 9999.9),['MIN_TEMP']] = (weather_data['AVG_TEMP']*2)-weather_data['MAX_TEMP']
+# Where MIN/AVG are known but MAX is not....calculate MAX
+weather_data.loc[ (weather_data['MIN_TEMP']!=9999.9) & (weather_data['MAX_TEMP'] == 9999.9),['MAX_TEMP']] = (weather_data['AVG_TEMP']*2)-weather_data['MIN_TEMP']
 
-precip_cols = ['DAPR',
-             'DAPR_ATTRIBUTES',
-             'MDPR',
-             'MDPR_ATTRIBUTES',
-             'PRCP',
-             'PRCP_ATTRIBUTES',
-             'SNOW',
-             'SNOW_ATTRIBUTES',
-            'SNWD',
-            'SNWD_ATTRIBUTES']
+#weather_data['DATE'] = pd.to_datetime(weather_data['DATE'])
+desc_cols = ['stn',
+             'name',
+             'date',
+             'year',
+             'MONTH',
+             'DAY',
+             'country',
+             'state',
+             'begin',
+             'end']
+
+temp_cols = ['AVG_TEMP',
+             'MAX_TEMP',
+             'MIN_TEMP']
+
+precip_cols = ['prcp']
 
 cache.set("weather_data", weather_data)
 cache.set('descriptive_columns',desc_cols)
@@ -72,20 +72,20 @@ def display_temp():
         labels = [row for row in df.columns]
         num_columns = df.shape[1]
 
-        stations = sorted(df['NAME'].unique())
+        stations = sorted(df['name'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
         date_range = df['DATE'].unique()
         date_range = [str(value) for value in date_range]
 
-        temp_data_clean = df.dropna(subset=['TAVG', 'TMAX','TMIN'])
-        df_values_avg = temp_data_clean[['DATE','TAVG',"TMAX","TMIN"]].groupby("DATE", as_index=False).mean()
-        df_values_max = temp_data_clean[['DATE','TAVG',"TMAX","TMIN"]].groupby("DATE", as_index=False).max()
-        df_values_min = temp_data_clean[['DATE','TAVG',"TMAX","TMIN"]].groupby("DATE", as_index=False).min()
+        temp_data_clean = df.dropna(subset=['AVG_TEMP', 'MAX_TEMP','MIN_TEMP'])
+        df_values_avg = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).mean()
+        df_values_max = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).max()
+        df_values_min = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).min()
 
-        df_values_avg = [value for value in df_values_avg['TAVG']]
-        df_values_max = [value for value in df_values_max['TMAX']]
-        df_values_min = [value for value in df_values_min['TMIN']]
+        df_values_avg = [value for value in df_values_avg['AVG_TEMP']]
+        df_values_max = [value for value in df_values_max['MAX_TEMP']]
+        df_values_min = [value for value in df_values_min['MIN_TEMP']]
 
         temp_max_axis = max(df_values_max) *1.05
         
@@ -98,7 +98,7 @@ def display_temp():
         df = cache.get("weather_data")
         df = df.drop(cache.get("precipitation_columns"),axis=1)
 
-        stations = sorted(df['NAME'].unique())
+        stations = sorted(df['name'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
 
@@ -107,7 +107,7 @@ def display_temp():
         end_date_filter = request.form.get("rain-end2")
         
         
-        df = df[df['NAME'].isin(location_filter)]
+        df = df[df['name'].isin(location_filter)]
         df = df[(df['DATE']<=end_date_filter) & (df['DATE']>=start_date_filter) ]
 
         cache.set("view_rain_data",df)
@@ -119,14 +119,14 @@ def display_temp():
         date_range = df['DATE'].unique()
         date_range = [str(value) for value in date_range]
 
-        temp_data_clean = df.dropna(subset=['TAVG', 'TMAX','TMIN'])
-        df_values_avg = temp_data_clean[['DATE','TAVG',"TMAX","TMIN"]].groupby("DATE", as_index=False).mean()
-        df_values_max = temp_data_clean[['DATE','TAVG',"TMAX","TMIN"]].groupby("DATE", as_index=False).max()
-        df_values_min = temp_data_clean[['DATE','TAVG',"TMAX","TMIN"]].groupby("DATE", as_index=False).min()
+        temp_data_clean = df.dropna(subset=['AVG_TEMP', 'MAX_TEMP','MIN_TEMP'])
+        df_values_avg = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).mean()
+        df_values_max = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).max()
+        df_values_min = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).min()
 
-        df_values_avg = [value for value in df_values_avg['TAVG']]
-        df_values_max = [value for value in df_values_max['TMAX']]
-        df_values_min = [value for value in df_values_min['TMIN']]
+        df_values_avg = [value for value in df_values_avg['AVG_TEMP']]
+        df_values_max = [value for value in df_values_max['MAX_TEMP']]
+        df_values_min = [value for value in df_values_min['MIN_TEMP']]
 
         temp_max_axis = max(df_values_max) *1.05
         
@@ -153,7 +153,7 @@ def display_temperature():
         labels = [row for row in df.columns]
         num_columns = df.shape[1]
 
-        stations = sorted(df['NAME'].unique())
+        stations = sorted(df['name'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
         
@@ -166,7 +166,7 @@ def display_temperature():
         df = cache.get("weather_data")
         df = df.drop(cache.get("precipitation_columns"),axis=1)
 
-        stations = sorted(df['NAME'].unique())
+        stations = sorted(df['name'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
 
@@ -175,7 +175,7 @@ def display_temperature():
         end_date_filter = request.form.get("rain-end")
         
         
-        df = df[df['NAME'].isin(location_filter)]
+        df = df[df['name'].isin(location_filter)]
         df = df[(df['DATE']<=end_date_filter) & (df['DATE']>=start_date_filter) ]
 
         cache.set("view_rain_data",df)
