@@ -136,7 +136,7 @@ var myLineChart = new Chart(ctx, {
       }],
       yAxes: [{
         ticks: {
-          min: -10,
+          min: {{ temp_min_axis | safe}},
           max: {{ temp_max_axis | safe}},
           maxTicksLimit: 5
         },

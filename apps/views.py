@@ -129,9 +129,10 @@ def display_temp():
         df_values_min = [value for value in df_values_min['MIN_TEMP']]
 
         temp_max_axis = max(df_values_max) *1.05
+        temp_min_axis =  0 if  min(df_values_min)>0 else min(df_values_min)
         
         return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
-                               num_columns=num_columns, stations = stations, date_range = date_range,temp_max_axis = temp_max_axis,
+                               num_columns=num_columns, stations = stations, date_range = date_range,temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
                                df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min)
                 
         #return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,num_columns=num_columns, stations = stations, location_filter=location_filter,start_date_filter=start_date_filter)
