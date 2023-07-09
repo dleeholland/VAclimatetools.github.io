@@ -21,11 +21,14 @@ app.config['UPLOAD_FOLDER'] = 'data'
 
 # Import Data
 import pandas as pd
+import numpy as np
 from datetime import datetime
 import os
 
 weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_clean_extract.csv'))
 weather_data['DATE'] = pd.to_datetime(dict(year=weather_data.year, month=weather_data.MONTH, day=weather_data.DAY))
+weather_data = weather_data.drop('date',axis=1)
+weather_data= weather_data.sort_values(by=['stn','DATE'], ascending=[True,True])
 
 # Correct Max / Min Temp days
 # Where MAX/MIN are both null or 999.9 = Min/Max = Avg
@@ -38,7 +41,7 @@ weather_data.loc[ (weather_data['MIN_TEMP']!=9999.9) & (weather_data['MAX_TEMP']
 #weather_data['DATE'] = pd.to_datetime(weather_data['DATE'])
 desc_cols = ['stn',
              'name',
-             'date',
+             'DATE',
              'year',
              'MONTH',
              'DAY',
@@ -66,7 +69,10 @@ def display_temp():
 
      if request.method == 'GET':
         df = cache.get("weather_data")
-        df = df.drop(cache.get("precipitation_columns"),axis=1)
+        try: 
+            df = df.drop(cache.get("precipitation_columns"),axis=1)
+        except:
+            df = df
         cache.set("view_rain_data",df)
         df_values = df.values
         labels = [row for row in df.columns]
@@ -75,8 +81,11 @@ def display_temp():
         stations = sorted(df['name'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
-        date_range = df['DATE'].unique()
-        date_range = [str(value) for value in date_range]
+
+        # Daily Line Chart Data
+        date_range = [np.datetime64(date) for date in df['DATE'].unique()]
+        date_range = pd.to_datetime(date_range)
+        date_range = [str(value.date()) for value in date_range]
 
         temp_data_clean = df.dropna(subset=['AVG_TEMP', 'MAX_TEMP','MIN_TEMP'])
         df_values_avg = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).mean()
@@ -88,10 +97,28 @@ def display_temp():
         df_values_min = [value for value in df_values_min['MIN_TEMP']]
 
         temp_max_axis = max(df_values_max) *1.05
+        temp_min_axis =  0 if  min(df_values_min)>0 else min(df_values_min)* 1.05
+
+
+        ##### Create Monthly Line Chart Data
+        df_values_avg_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).mean()
+        df_values_max_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).max()
+        df_values_min_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).min()
+
+        df_values_avg_monthly = [value for value in df_values_avg_monthly['AVG_TEMP']]
+        df_values_max_monthly = [value for value in df_values_max_monthly['MAX_TEMP']]
+        df_values_min_monthly = [value for value in df_values_min_monthly['MIN_TEMP']]
+
+        #date_range_monthly = df['DATE'].dt.strftime("%m/%y").unique().tolist()
+        date_range_monthly = df['DATE'].dt.unique().tolist()
+
+        ##### Render Template
         
         return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
-                               num_columns=num_columns, stations = stations, date_range = date_range, temp_max_axis = temp_max_axis,
-                               df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min)
+                               num_columns=num_columns, stations = stations, date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
+                               df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
+                               df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,
+                               date_range_monthly=date_range_monthly)
      
      if request.method == 'POST':
 
@@ -116,8 +143,9 @@ def display_temp():
         labels = [row for row in df.columns]
         num_columns = df.shape[1]    
 
-        date_range = df['DATE'].unique()
-        date_range = [str(value) for value in date_range]
+        date_range = [np.datetime64(date) for date in df['DATE'].unique()]
+        date_range = pd.to_datetime(date_range)
+        date_range = [str(value.date()) for value in date_range]
 
         temp_data_clean = df.dropna(subset=['AVG_TEMP', 'MAX_TEMP','MIN_TEMP'])
         df_values_avg = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).mean()
@@ -128,12 +156,29 @@ def display_temp():
         df_values_max = [value for value in df_values_max['MAX_TEMP']]
         df_values_min = [value for value in df_values_min['MIN_TEMP']]
 
-        temp_max_axis = max(df_values_max) *1.05
-        temp_min_axis =  0 if  min(df_values_min)>0 else min(df_values_min)
+        temp_max_axis = max(df_values_max) * 1.05
+        temp_min_axis =  0 if  min(df_values_min)>0 else min(df_values_min)* 1.05
+        
+        
+
+        ##### Create Monthly Line Chart Data
+        df_values_avg_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).mean()
+        df_values_max_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).max()
+        df_values_min_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).min()
+
+        df_values_avg_monthly = [value for value in df_values_avg_monthly['AVG_TEMP']]
+        df_values_max_monthly = [value for value in df_values_max_monthly['MAX_TEMP']]
+        df_values_min_monthly = [value for value in df_values_min_monthly['MIN_TEMP']]
+
+        date_range_monthly = df['DATE'].dt.strftime("%m/%y").unique().tolist()
+
+        ##### Render Template
         
         return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
-                               num_columns=num_columns, stations = stations, date_range = date_range,temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
-                               df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min)
+                               num_columns=num_columns, stations = stations, date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
+                               df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
+                               df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,
+                               date_range_monthly=date_range_monthly)
                 
         #return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,num_columns=num_columns, stations = stations, location_filter=location_filter,start_date_filter=start_date_filter)
 

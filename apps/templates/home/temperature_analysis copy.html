@@ -82,6 +82,7 @@ var myLineChart = new Chart(ctx, {
       label: "Avg Temp",
       lineTension: 0.3,
       //backgroundColor: "rgba(0,0,0)",
+      fill: false,
       borderColor: "rgba(73,82,91)",
       pointRadius: 5,
       pointBackgroundColor: "rgba(73,82,91)",
@@ -96,6 +97,7 @@ var myLineChart = new Chart(ctx, {
       label: "Max Temp",
       lineTension: 0.3,
       //backgroundColor: "rgba(255, 0, 0, 0.2)",
+      fill: false,
       borderColor: "rgba(255, 0, 0, 0.4)",
       pointRadius: 5,
       pointBackgroundColor: "rgba(255, 0, 0, 0.4)",
@@ -110,6 +112,7 @@ var myLineChart = new Chart(ctx, {
       label: "Min Temp",
       lineTension: 0.3,
       //backgroundColor: "rgba(2,117,216,0.2)",
+      fill: false,
       borderColor: "rgba(2,117,216,1)",
       pointRadius: 5,
       pointBackgroundColor: "rgba(2,117,216,1)",
@@ -131,7 +134,7 @@ var myLineChart = new Chart(ctx, {
           display: false
         },
         ticks: {
-          maxTicksLimit: 7
+          maxTicksLimit: 30
         }
       }],
       yAxes: [{
@@ -163,9 +166,12 @@ var myLineChart = new Chart(ctx, {
                             Bar Chart Example
                         </div>
                         <div class="card-body"><canvas id="myBarChart" width="100%" height="40"></canvas></div>
+                        
                     </div>
                 </div>
             </div>
+
+
             <div class="row">
                 <div class="col-xl-6">
                     <div class="card mb-4">
@@ -173,7 +179,96 @@ var myLineChart = new Chart(ctx, {
                             <i class="fas fa-chart-area me-1"></i>
                             Area Chart Example
                         </div>
-                        <div class="card-body"><canvas id="myAreaChart" width="100%" height="40"></canvas></div>
+                        <div class="card-body"><canvas id="monthly_temp_over_time" width="100%" height="40"></canvas></div>
+                        <!-- START OF SCRIPT-->
+                        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
+
+                        <script>
+                            var ctx = document.getElementById("monthly_temp_over_time");
+var myLineChart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: {{ date_range_monthly | safe }},
+    datasets: [{
+      label: "Avg Temp",
+      lineTension: 0.3,
+      fill: false,
+      //backgroundColor: "rgba(0,0,0)",
+      borderColor: "rgba(73,82,91)",
+      pointRadius: 5,
+      pointBackgroundColor: "rgba(73,82,91)",
+      pointBorderColor: "rgba(73,82,89)",
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: "rgba(73,82,91)",
+      pointHitRadius: 50,
+      pointBorderWidth: 2,
+      data: {{ df_values_avg_monthly | safe }}
+    },
+    {
+      label: "Max Temp",
+      lineTension: 0.3,
+      //backgroundColor: "rgba(255, 0, 0, 0.2)",
+      fill: false,
+      borderColor: "rgba(255, 0, 0, 0.4)",
+      pointRadius: 5,
+      pointBackgroundColor: "rgba(255, 0, 0, 0.4)",
+      pointBorderColor: "rgba(255, 0, 0, 0.3)",
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: "rgba(255, 0, 0, 0.4)",
+      pointHitRadius: 50,
+      pointBorderWidth: 2,
+      data: {{ df_values_max_monthly | safe }}
+    },
+    {
+      label: "Min Temp",
+      lineTension: 0.3,
+      //backgroundColor: "rgba(2,117,216,0.2)",
+      fill: false,
+      borderColor: "rgba(2,117,216,1)",
+      pointRadius: 5,
+      pointBackgroundColor: "rgba(2,117,216,1)",
+      pointBorderColor: "rgba(255,255,255,0.8)",
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: "rgba(2,117,216,1)",
+      pointHitRadius: 50,
+      pointBorderWidth: 2,
+      data: {{ df_values_min_monthly | safe }}
+    }],
+  },
+  options: {
+    scales: {
+      xAxes: [{
+        time: {
+          unit: 'date'
+        },
+        gridLines: {
+          display: false
+        },
+        ticks: {
+          maxTicksLimit: 30
+        }
+      }],
+      yAxes: [{
+        ticks: {
+          min: {{ temp_min_axis | safe}},
+          max: {{ temp_max_axis | safe}},
+          maxTicksLimit: 5
+        },
+        gridLines: {
+          color: "rgba(0, 0, 0, .125)",
+        }
+      }],
+    },
+    legend: {
+      display: false
+    }
+  }
+});
+
+                        </script>
+
+                        <!-- END OF SCRIPT -->
+
                     </div>
                 </div>
                 <div class="col-xl-6">
