@@ -18,10 +18,10 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                    <div class="col-md-2">
-                        <form method="post" id="multiple_select_form">
+                    <div class="col-md-4">
+                        <form method="post" id="multiple_select_form2">
                         <a>Select Weather Station(s)</a>
-                        <select  name="Station_Select" id = "Station_Select" class="form-control selectpicker"  method="post"  multiple data-live-search="true"  >
+                        <select  name="Station_Select" id = "Station_Select2" class="form-control selectpicker"  method="post"  multiple data-live-search="true"  >
                             {% for station in stations %}
                                <option name = "{{station}}" value= "{{station}}" SELECTED>{{station}}</option>
                                {% endfor %}
@@ -31,14 +31,14 @@
                     <div class="col-md-2">
                     <div title="Your title here2!">Select Start Date</div>
                     
-                    <input type="date" id="start" name="rain-start"
+                    <input type="date" id="start2" name="temp-start"
                            value="{{min_date}}"
                            min="{{min_date}}" max="{{max_date}}">
                         </div>
                     
-                    <div class="col-sm-1">
+                    <div class="col-md-2">
                     <div title="Your title here!">Select End Date</div>
-                    <input type="date" id="end" name="rain-end"
+                    <input type="date" id="end2" name="temp-end"
                                   value="{{max_date}}"
                                   min="{{min_date}}" max="{{max_date}}">
 

@@ -15,7 +15,7 @@ from flask_caching import Cache
 
 from io import StringIO
 
-cache = Cache(app,config={'CACHE_TYPE': 'simple'})
+cache = Cache(app,config={'CACHE_TYPE': 'simple','CACHE_DEFAULT_TIMEOUT':3600})
 
 app.config['UPLOAD_FOLDER'] = 'data'
 
@@ -25,10 +25,25 @@ import numpy as np
 from datetime import datetime
 import os
 
-weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_clean_extract.csv'))
-weather_data['DATE'] = pd.to_datetime(dict(year=weather_data.year, month=weather_data.MONTH, day=weather_data.DAY))
-weather_data = weather_data.drop('date',axis=1)
-weather_data= weather_data.sort_values(by=['stn','DATE'], ascending=[True,True])
+#weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_clean_extract.csv'))
+weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_zip_extract.csv'))
+
+
+
+weather_data['DATE'] = pd.to_datetime(dict(year=weather_data.Year, month=weather_data.Mo, day=weather_data.Da))
+#weather_data = weather_data.drop('date',axis=1)
+weather_data= weather_data.sort_values(by=['Station_ID','DATE'], ascending=[True,True])
+station_list = weather_data[['Station_ID','Station_Name']].drop_duplicates(subset=['Station_ID'])
+weather_data = pd.merge(weather_data, station_list,how="outer", on=["Station_ID"])
+weather_data = weather_data.drop(['Station_Name_x'],axis=1)
+weather_data.rename(columns = {"Station_Name_y": "Station_Name",
+                               "Year":"year",
+                               "Da":"DAY",
+                               "Mo":"MONTH",
+                                "Temp":"AVG_TEMP",
+                                "Max":"MAX_TEMP",
+                                "Min":"MIN_TEMP"}, 
+          inplace = True)
 
 # Correct Max / Min Temp days
 # Where MAX/MIN are both null or 999.9 = Min/Max = Avg
@@ -39,22 +54,24 @@ weather_data.loc[ (weather_data['MIN_TEMP']==9999.9) & (weather_data['MAX_TEMP']
 weather_data.loc[ (weather_data['MIN_TEMP']!=9999.9) & (weather_data['MAX_TEMP'] == 9999.9),['MAX_TEMP']] = (weather_data['AVG_TEMP']*2)-weather_data['MIN_TEMP']
 
 #weather_data['DATE'] = pd.to_datetime(weather_data['DATE'])
-desc_cols = ['stn',
-             'name',
+desc_cols = ['Station_ID',
+             'Station_Name',
              'DATE',
              'year',
              'MONTH',
              'DAY',
-             'country',
-             'state',
-             'begin',
-             'end']
+             'Latitude',
+             'Longitude',
+             'zip_code'
+             'city',
+             'county']
 
 temp_cols = ['AVG_TEMP',
              'MAX_TEMP',
              'MIN_TEMP']
 
-precip_cols = ['prcp']
+precip_cols = ['Prcp']
+
 
 cache.set("weather_data", weather_data)
 cache.set('descriptive_columns',desc_cols)
@@ -66,19 +83,22 @@ cache.set('temperature_columns',temp_cols)
 # App main route + generic routing
 @app.route('/temperature_analysis', methods=['GET','POST'])
 def display_temp():
+     temp_threshold = list(range(88,110))
 
      if request.method == 'GET':
         df = cache.get("weather_data")
-        try: 
+
+        if all(col in df.columns for col in cache.get("precipitation_columns")):
             df = df.drop(cache.get("precipitation_columns"),axis=1)
-        except:
+        else:
             df = df
+        
         cache.set("view_rain_data",df)
         df_values = df.values
         labels = [row for row in df.columns]
         num_columns = df.shape[1]
 
-        stations = sorted(df['name'].unique())
+        stations = sorted(df['Station_Name'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
 
@@ -109,8 +129,8 @@ def display_temp():
         df_values_max_monthly = [value for value in df_values_max_monthly['MAX_TEMP']]
         df_values_min_monthly = [value for value in df_values_min_monthly['MIN_TEMP']]
 
-        #date_range_monthly = df['DATE'].dt.strftime("%m/%y").unique().tolist()
-        date_range_monthly = df['DATE'].dt.unique().tolist()
+        date_range_monthly = df['DATE'].dt.strftime("%m/%y").unique().tolist()
+       # date_range_monthly = df['DATE'].dt.unique().tolist()
 
         ##### Render Template
         
@@ -118,23 +138,31 @@ def display_temp():
                                num_columns=num_columns, stations = stations, date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
                                df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
                                df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,
-                               date_range_monthly=date_range_monthly)
+                               date_range_monthly=date_range_monthly,temp_threshold=temp_threshold)
      
      if request.method == 'POST':
 
         df = cache.get("weather_data")
-        df = df.drop(cache.get("precipitation_columns"),axis=1)
+        if all(col in df.columns for col in cache.get("precipitation_columns")):
+            df = df.drop(cache.get("precipitation_columns"),axis=1)
+        else:
+            df = df
 
-        stations = sorted(df['name'].unique())
+        stations = sorted(df['Station_Name'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
 
         location_filter = request.form.getlist('Station_Select2')
-        start_date_filter = request.form.get('rain-start2')
-        end_date_filter = request.form.get("rain-end2")
+        start_date_filter = request.form.get('temp-start2')
+        end_date_filter = request.form.get("temp-end2")
         
         
-        df = df[df['name'].isin(location_filter)]
+        df = df[df['Station_Name'].isin(location_filter)]
+
+        if len(df[df["DATE"]<=pd.to_datetime(end_date_filter)]) == 0:
+            df = df.append(df.head(1),ignore_index=True)
+            df.loc[len(df)-1,['DATE','year','MONTH','DAY','AVG_TEMP','MAX_TEMP','MIN_TEMP']] = [pd.to_datetime(end_date_filter),np.NaN,np.NaN,np.NaN,0,0,0]
+
         df = df[(df['DATE']<=end_date_filter) & (df['DATE']>=start_date_filter) ]
 
         cache.set("view_rain_data",df)
@@ -178,7 +206,7 @@ def display_temp():
                                num_columns=num_columns, stations = stations, date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
                                df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
                                df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,
-                               date_range_monthly=date_range_monthly)
+                               date_range_monthly=date_range_monthly,temp_threshold=temp_threshold)
                 
         #return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,num_columns=num_columns, stations = stations, location_filter=location_filter,start_date_filter=start_date_filter)
 
@@ -191,7 +219,10 @@ def display_temperature():
 
     if request.method == 'GET':
         df = cache.get("weather_data")
-        df = df.drop(cache.get("precipitation_columns"),axis=1)
+        if all(col in df.columns for col in cache.get("precipitation_columns")):
+            df = df.drop(cache.get("precipitation_columns"),axis=1)
+        else:
+            df = df
 
         cache.set("view_rain_data",df)
 
@@ -199,7 +230,7 @@ def display_temperature():
         labels = [row for row in df.columns]
         num_columns = df.shape[1]
 
-        stations = sorted(df['name'].unique())
+        stations = sorted(df['Station_Name'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
         
@@ -210,18 +241,26 @@ def display_temperature():
     if request.method == 'POST':
 
         df = cache.get("weather_data")
-        df = df.drop(cache.get("precipitation_columns"),axis=1)
+        if all(col in df.columns for col in cache.get("precipitation_columns")):
+            df = df.drop(cache.get("precipitation_columns"),axis=1)
+        else:
+            df = df
 
-        stations = sorted(df['name'].unique())
+        stations = sorted(df['Station_Name'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
 
         location_filter = request.form.getlist('Station_Select')
-        start_date_filter = request.form.get('rain-start')
-        end_date_filter = request.form.get("rain-end")
+        start_date_filter = request.form.get('temp-start')
+        end_date_filter = request.form.get("temp-end")
         
         
-        df = df[df['name'].isin(location_filter)]
+        df = df[df['Station_Name'].isin(location_filter)]
+        
+        if len(df[df["DATE"]<=end_date_filter]) == 0:
+            df = df.append(df.head(1),ignore_index=True)
+            df.loc[len(df)-1,['DATE','year','MONTH','DAY','AVG_TEMP','MAX_TEMP','MIN_TEMP']] = [pd.to_datetime(end_date_filter),np.NaN,np.NaN,np.NaN,np.NaN,np.NaN,np.NaN]
+
         df = df[(df['DATE']<=end_date_filter) & (df['DATE']>=start_date_filter) ]
 
         cache.set("view_rain_data",df)
