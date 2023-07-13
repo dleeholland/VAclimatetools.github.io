@@ -6,6 +6,7 @@ Copyright (c) 2019 - present AppSeed.us
 # Flask modules
 from flask   import render_template, request, send_file, send_from_directory, make_response
 from jinja2  import TemplateNotFound
+import matplotlib
 
 
 
@@ -23,6 +24,9 @@ app.config['UPLOAD_FOLDER'] = 'data'
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from matplotlib import pyplot as plt
+matplotlib.use('agg')
+import seaborn as sb
 import os
 
 #weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_clean_extract.csv'))
@@ -44,6 +48,8 @@ weather_data.rename(columns = {"Station_Name_y": "Station_Name",
                                 "Max":"MAX_TEMP",
                                 "Min":"MIN_TEMP"}, 
           inplace = True)
+
+weather_data['MONTH'] = weather_data['DATE'].dt.strftime('%b')
 
 # Correct Max / Min Temp days
 # Where MAX/MIN are both null or 999.9 = Min/Max = Avg
@@ -116,8 +122,8 @@ def display_temp():
         df_values_max = [value for value in df_values_max['MAX_TEMP']]
         df_values_min = [value for value in df_values_min['MIN_TEMP']]
 
-        temp_max_axis = max(df_values_max) *1.05
-        temp_min_axis =  0 if  min(df_values_min)>0 else min(df_values_min)* 1.05
+        temp_max_axis = np.round(max(df_values_max) *1.05,0)
+        temp_min_axis =  0 if  min(df_values_min)>0 else np.round(min(df_values_min)* 1.05,0)
 
 
         ##### Create Monthly Line Chart Data
@@ -132,13 +138,34 @@ def display_temp():
         date_range_monthly = df['DATE'].dt.strftime("%m/%y").unique().tolist()
        # date_range_monthly = df['DATE'].dt.unique().tolist()
 
+
+       ###### Create BoxPlot
+        dfl = pd.melt(df, id_vars='MONTH', value_vars=["MAX_TEMP","MIN_TEMP"])
+        plt.clf()
+        colors = ["#FF0000", "#0275D8"]
+        sb.set_palette(sb.color_palette(colors))
+        plot = sb.boxplot(x='MONTH', y='value', data=dfl, showfliers=False, hue='variable')
+        #plt.legend(bbox_to_anchor=(1.04,0.5), loc="center left", borderaxespad=0)
+        plt.legend([],[], frameon=False)
+              
+        #set axis names
+        plot.set(xlabel='Month',
+                 ylabel='Temperature')
+        
+        #boxplot_url = str(os.path.join(app.root_path,'static','assets','img','temp_box.png'))
+        plt.savefig(os.path.join(app.root_path, 'static','assets','img','temp_box.png'))
+        #plt.savefig(boxplot_url)
+        boxplot_url = '/static/assets/img/temp_box.png'
+        
+
+
         ##### Render Template
         
         return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
                                num_columns=num_columns, stations = stations, date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
                                df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
                                df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,
-                               date_range_monthly=date_range_monthly,temp_threshold=temp_threshold)
+                               date_range_monthly=date_range_monthly,temp_threshold=temp_threshold, boxplot_name = boxplot_url ,boxplot_url = boxplot_url)
      
      if request.method == 'POST':
 
@@ -200,13 +227,32 @@ def display_temp():
 
         date_range_monthly = df['DATE'].dt.strftime("%m/%y").unique().tolist()
 
+        ###### Create BoxPlot
+        dfl = pd.melt(df, id_vars='MONTH', value_vars=["MAX_TEMP","MIN_TEMP"])
+        plt.clf()
+        colors = ["#FF0000", "#0275D8"]
+        sb.set_palette(sb.color_palette(colors))
+        plot = sb.boxplot(x='MONTH', y='value', data=dfl, showfliers=False,hue="variable")
+        
+        #plot = sb.boxplot(x='MONTH', y='value', data=dfl, showfliers=False, hue='variable')
+        #plt.legend(bbox_to_anchor=(1.04,0.5), loc="center left", borderaxespad=0)
+        plt.legend([],[], frameon=False)
+              
+        #set axis names
+        plot.set(xlabel='Month',
+                 ylabel='Temperature')
+        #boxplot_url = str(os.path.join(app.root_path,'static','assets','img','temp_box.png'))
+        plt.savefig(os.path.join(app.root_path, 'static','assets','img','temp_box.png'))
+        #plt.savefig(boxplot_url)
+        boxplot_url = '/static/assets/img/temp_box.png'
+
         ##### Render Template
         
         return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
                                num_columns=num_columns, stations = stations, date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
                                df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
                                df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,
-                               date_range_monthly=date_range_monthly,temp_threshold=temp_threshold)
+                               date_range_monthly=date_range_monthly,temp_threshold=temp_threshold, boxplot_name = boxplot_url ,boxplot_url = boxplot_url)
                 
         #return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,num_columns=num_columns, stations = stations, location_filter=location_filter,start_date_filter=start_date_filter)
 
