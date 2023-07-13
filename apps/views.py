@@ -49,7 +49,7 @@ weather_data.rename(columns = {"Station_Name_y": "Station_Name",
                                 "Min":"MIN_TEMP"}, 
           inplace = True)
 
-weather_data['MONTH'] = weather_data['DATE'].dt.strftime('%b')
+weather_data['MONTH_Name'] = weather_data['DATE'].dt.strftime('%b')
 
 # Correct Max / Min Temp days
 # Where MAX/MIN are both null or 999.9 = Min/Max = Avg
@@ -140,11 +140,11 @@ def display_temp():
 
 
        ###### Create BoxPlot
-        dfl = pd.melt(df, id_vars='MONTH', value_vars=["MAX_TEMP","MIN_TEMP"])
+        dfl = pd.melt(df, id_vars='MONTH_Name', value_vars=["MAX_TEMP","MIN_TEMP"])
         plt.clf()
         colors = ["#FF0000", "#0275D8"]
         sb.set_palette(sb.color_palette(colors))
-        plot = sb.boxplot(x='MONTH', y='value', data=dfl, showfliers=False, hue='variable')
+        plot = sb.boxplot(x='MONTH_Name', y='value', data=dfl, showfliers=False, hue='variable')
         #plt.legend(bbox_to_anchor=(1.04,0.5), loc="center left", borderaxespad=0)
         plt.legend([],[], frameon=False)
               
@@ -228,11 +228,11 @@ def display_temp():
         date_range_monthly = df['DATE'].dt.strftime("%m/%y").unique().tolist()
 
         ###### Create BoxPlot
-        dfl = pd.melt(df, id_vars='MONTH', value_vars=["MAX_TEMP","MIN_TEMP"])
+        dfl = pd.melt(df, id_vars='MONTH_Name', value_vars=["MAX_TEMP","MIN_TEMP"])
         plt.clf()
         colors = ["#FF0000", "#0275D8"]
         sb.set_palette(sb.color_palette(colors))
-        plot = sb.boxplot(x='MONTH', y='value', data=dfl, showfliers=False,hue="variable")
+        plot = sb.boxplot(x='MONTH_Name', y='value', data=dfl, showfliers=False,hue="variable")
         
         #plot = sb.boxplot(x='MONTH', y='value', data=dfl, showfliers=False, hue='variable')
         #plt.legend(bbox_to_anchor=(1.04,0.5), loc="center left", borderaxespad=0)
