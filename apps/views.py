@@ -39,7 +39,7 @@ refresh_data=False
 
 '''if refresh_data:
     credentials = service_account.Credentials.from_service_account_file(
-            os.path.join(app.root_path,'gmu-capstone-2023-7bc5f5f29d06.json'))
+            os.path.join(app.root_path,'config','gmu-capstone-2023-7bc5f5f29d06.json'))
     client = bigquery.Client(credentials=credentials, project='gmu-capstone-2023')
     
     # compose the SQL query
@@ -55,7 +55,7 @@ refresh_data=False
 
 if refresh_data:
     credentials = service_account.Credentials.from_service_account_file(
-            os.path.join(app.root_path,'va-climate-change-ccd123ee3fbe.json'))
+            os.path.join(app.root_path,'config','va-climate-change-ccd123ee3fbe.json'))
     client = bigquery.Client(credentials=credentials, project='va-climate-change')
     
     # compose the SQL query
@@ -219,6 +219,9 @@ def display_temp():
         plt.savefig(os.path.join(app.root_path, 'static','assets','img','temp_box.png'))
         #plt.savefig(boxplot_url)
         boxplot_url = '/static/assets/img/temp_box.png'
+
+        gsodData = temp_data_clean
+        
         
 
 
@@ -231,7 +234,7 @@ def display_temp():
                                date_range_monthly=date_range_monthly,temp_threshold=temp_threshold, boxplot_name = boxplot_url ,boxplot_url = boxplot_url,
                                num_days_max_heat_threshold=num_days_max_heat_threshold,num_days_min_heat_threshold=num_days_min_heat_threshold,pct_days_max_heat_threshold=pct_days_max_heat_threshold,
                                pct_days_min_heat_threshold=pct_days_min_heat_threshold,max_heat_threshold_filter=max_heat_threshold_filter,min_heat_threshold_filter=min_heat_threshold_filter,
-                               start_date_filter=start_date_filter,end_date_filter=end_date_filter)
+                               start_date_filter=start_date_filter,end_date_filter=end_date_filter,gsodData=gsodData)
      
      if request.method == 'POST':
 
