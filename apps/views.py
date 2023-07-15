@@ -28,15 +28,57 @@ from matplotlib import pyplot as plt
 matplotlib.use('agg')
 import seaborn as sb
 import os
+from google.cloud import bigquery
+from google.oauth2 import service_account
 
 #weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_clean_extract.csv'))
-weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_zip_extract.csv'))
+#weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_zip_extract.csv'))
+
+# GCP?
+refresh_data=False
+
+'''if refresh_data:
+    credentials = service_account.Credentials.from_service_account_file(
+            os.path.join(app.root_path,'gmu-capstone-2023-7bc5f5f29d06.json'))
+    client = bigquery.Client(credentials=credentials, project='gmu-capstone-2023')
+    
+    # compose the SQL query
+    sql = """
+    SELECT  *
+    FROM `gmu-capstone-2023.VA_NOAA_SORTED_ZIPS.VA_NOAA_SORTED_ZIPS1`
+    WHERE Year >= '2022' AND Station_ID != '999999'
+    
+    """
+    weather_data = client.query(sql).to_dataframe()
+    weather_data.to_csv(os.path.join(app.root_path,'data','gsod_zip_extract_gcp.csv'),index=False)
+    '''
+
+if refresh_data:
+    credentials = service_account.Credentials.from_service_account_file(
+            os.path.join(app.root_path,'va-climate-change-ccd123ee3fbe.json'))
+    client = bigquery.Client(credentials=credentials, project='va-climate-change')
+    
+    # compose the SQL query
+    sql = """
+    SELECT  Station_ID, Station_Name, date, Year, Mo, Da, Temp, Min, Max,Prcp,
+      Latitude, Longitude, county
+    FROM `va-climate-change.gsod_dataset.gsod_data_clean_zip`
+    WHERE Year >= '1960' AND Station_ID != '999999'
+    
+    """
+    weather_data = client.query(sql).to_dataframe()
+    weather_data.to_csv(os.path.join(app.root_path,'data','gsod_zip_extract_gcp.csv'),index=False)
+
+weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_zip_extract_gcp.csv'))
 
 
+
+##### Data Cleansing
 
 weather_data['DATE'] = pd.to_datetime(dict(year=weather_data.Year, month=weather_data.Mo, day=weather_data.Da))
 #weather_data = weather_data.drop('date',axis=1)
-weather_data= weather_data.sort_values(by=['Station_ID','DATE'], ascending=[True,True])
+#weather_data= weather_data.sort_values(by=['Station_ID','DATE'], ascending=[True,True])
+weather_data= weather_data.sort_values(by=['DATE'], ascending=[True])
 station_list = weather_data[['Station_ID','Station_Name']].drop_duplicates(subset=['Station_ID'])
 weather_data = pd.merge(weather_data, station_list,how="outer", on=["Station_ID"])
 weather_data = weather_data.drop(['Station_Name_x'],axis=1)
@@ -89,7 +131,7 @@ cache.set('temperature_columns',temp_cols)
 # App main route + generic routing
 @app.route('/temperature_analysis', methods=['GET','POST'])
 def display_temp():
-     temp_threshold = list(range(88,110))
+     temp_threshold = list(range(70,110))
 
      if request.method == 'GET':
         df = cache.get("weather_data")
@@ -105,31 +147,52 @@ def display_temp():
         num_columns = df.shape[1]
 
         stations = sorted(df['Station_Name'].unique())
+        counties = sorted(df['county'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
+        
 
         # Daily Line Chart Data
-        date_range = [np.datetime64(date) for date in df['DATE'].unique()]
+        date_range = [np.datetime64(date) for date in sorted(df['DATE'].unique())]
         date_range = pd.to_datetime(date_range)
         date_range = [str(value.date()) for value in date_range]
 
         temp_data_clean = df.dropna(subset=['AVG_TEMP', 'MAX_TEMP','MIN_TEMP'])
-        df_values_avg = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).mean()
-        df_values_max = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).max()
-        df_values_min = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).min()
+        df_values_avg = temp_data_clean[['DATE','AVG_TEMP']].groupby("DATE", as_index=False).mean()
+        df_values_max = temp_data_clean[['DATE',"MAX_TEMP"]].groupby("DATE", as_index=False).max()
+        df_values_min = temp_data_clean[['DATE',"MIN_TEMP"]].groupby("DATE", as_index=False).min()
+
+        df_values_avg = df_values_avg.sort_values(by=['DATE'], ascending=[True])
+        df_values_max = df_values_max.sort_values(by=['DATE'], ascending=[True])
+        df_values_min = df_values_min.sort_values(by=['DATE'], ascending=[True])
+
+        max_heat_threshold_filter = 88
+        min_heat_threshold_filter = 88
+        start_date_filter = min_date
+        end_date_filter = max_date
+
+        num_days_max_heat_threshold = len(df_values_max.loc[df_values_max['MAX_TEMP']>=int(max_heat_threshold_filter)])
+        pct_days_max_heat_threshold = np.round((num_days_max_heat_threshold/len(df_values_max['MAX_TEMP']))*100,0)
+        num_days_min_heat_threshold = len(df_values_min.loc[df_values_min['MIN_TEMP']>=int(min_heat_threshold_filter)])
+        pct_days_min_heat_threshold = np.round((num_days_min_heat_threshold/len(df_values_min['MIN_TEMP']))*100,0)
+        #num_days_minmax_heat_threshold = len(df_values_max.loc[df_values_max['MAX_TEMP']>=int(max_heat_threshold_filter) & df_values_max])
 
         df_values_avg = [value for value in df_values_avg['AVG_TEMP']]
         df_values_max = [value for value in df_values_max['MAX_TEMP']]
         df_values_min = [value for value in df_values_min['MIN_TEMP']]
 
-        temp_max_axis = np.round(max(df_values_max) *1.05,0)
-        temp_min_axis =  0 if  min(df_values_min)>0 else np.round(min(df_values_min)* 1.05,0)
+        temp_max_axis = np.round(max(df_values_max) *1.1,0)
+        temp_min_axis =  0 if  min(df_values_min)>0 else np.round(min(df_values_min)* 1.1,0)
 
 
         ##### Create Monthly Line Chart Data
-        df_values_avg_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).mean()
-        df_values_max_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).max()
-        df_values_min_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).min()
+        df_values_avg_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP']].groupby(['MONTH','year'], as_index=False).mean()
+        df_values_max_monthly = temp_data_clean[['MONTH','year','DATE',"MAX_TEMP"]].groupby(['MONTH','year'], as_index=False).max()
+        df_values_min_monthly = temp_data_clean[['MONTH','year','DATE',"MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).min()
+
+        df_values_avg_monthly = df_values_avg_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
+        df_values_max_monthly = df_values_max_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
+        df_values_min_monthly = df_values_min_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
 
         df_values_avg_monthly = [value for value in df_values_avg_monthly['AVG_TEMP']]
         df_values_max_monthly = [value for value in df_values_max_monthly['MAX_TEMP']]
@@ -162,10 +225,13 @@ def display_temp():
         ##### Render Template
         
         return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
-                               num_columns=num_columns, stations = stations, date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
+                               num_columns=num_columns, stations = stations, counties = counties,date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
                                df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
                                df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,
-                               date_range_monthly=date_range_monthly,temp_threshold=temp_threshold, boxplot_name = boxplot_url ,boxplot_url = boxplot_url)
+                               date_range_monthly=date_range_monthly,temp_threshold=temp_threshold, boxplot_name = boxplot_url ,boxplot_url = boxplot_url,
+                               num_days_max_heat_threshold=num_days_max_heat_threshold,num_days_min_heat_threshold=num_days_min_heat_threshold,pct_days_max_heat_threshold=pct_days_max_heat_threshold,
+                               pct_days_min_heat_threshold=pct_days_min_heat_threshold,max_heat_threshold_filter=max_heat_threshold_filter,min_heat_threshold_filter=min_heat_threshold_filter,
+                               start_date_filter=start_date_filter,end_date_filter=end_date_filter)
      
      if request.method == 'POST':
 
@@ -176,19 +242,24 @@ def display_temp():
             df = df
 
         stations = sorted(df['Station_Name'].unique())
+        counties = sorted(df['county'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
 
-        location_filter = request.form.getlist('Station_Select2')
+        #location_filter = request.form.getlist('Station_Select2')
+        county_filter = request.form.getlist('County_Select')
         start_date_filter = request.form.get('temp-start2')
         end_date_filter = request.form.get("temp-end2")
+        max_heat_threshold_filter = request.form.get("max-heat-options")
+        min_heat_threshold_filter = request.form.get("min-heat-options")
         
         
-        df = df[df['Station_Name'].isin(location_filter)]
+        #df = df[df['Station_Name'].isin(location_filter)]
+        df = df[df['county'].isin(county_filter)]
 
         if len(df[df["DATE"]<=pd.to_datetime(end_date_filter)]) == 0:
             df = df.append(df.head(1),ignore_index=True)
-            df.loc[len(df)-1,['DATE','year','MONTH','DAY','AVG_TEMP','MAX_TEMP','MIN_TEMP']] = [pd.to_datetime(end_date_filter),np.NaN,np.NaN,np.NaN,0,0,0]
+            df.loc[len(df)-1,['DATE','year','MONTH','DAY','AVG_TEMP','MAX_TEMP','MIN_TEMP']] = [pd.to_datetime(end_date_filter),np.NaN,np.NaN,np.NaN,np.Nan,np.Nan,np.Nan]
 
         df = df[(df['DATE']<=end_date_filter) & (df['DATE']>=start_date_filter) ]
 
@@ -198,7 +269,7 @@ def display_temp():
         labels = [row for row in df.columns]
         num_columns = df.shape[1]    
 
-        date_range = [np.datetime64(date) for date in df['DATE'].unique()]
+        date_range = [np.datetime64(date) for date in sorted(df['DATE'].unique())]
         date_range = pd.to_datetime(date_range)
         date_range = [str(value.date()) for value in date_range]
 
@@ -207,19 +278,32 @@ def display_temp():
         df_values_max = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).max()
         df_values_min = temp_data_clean[['DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby("DATE", as_index=False).min()
 
+        df_values_avg = df_values_avg.sort_values(by=['DATE'], ascending=[True])
+        df_values_max = df_values_max.sort_values(by=['DATE'], ascending=[True])
+        df_values_min = df_values_min.sort_values(by=['DATE'], ascending=[True])
+
+        num_days_max_heat_threshold = len(df_values_max.loc[df_values_max['MAX_TEMP']>=int(max_heat_threshold_filter)])
+        pct_days_max_heat_threshold = np.round((num_days_max_heat_threshold/len(df_values_max['MAX_TEMP']))*100,0)
+        num_days_min_heat_threshold = len(df_values_max.loc[df_values_max['MIN_TEMP']>=int(min_heat_threshold_filter)])
+        pct_days_min_heat_threshold = np.round((num_days_min_heat_threshold/len(df_values_min['MIN_TEMP']))*100,0)
+
         df_values_avg = [value for value in df_values_avg['AVG_TEMP']]
         df_values_max = [value for value in df_values_max['MAX_TEMP']]
         df_values_min = [value for value in df_values_min['MIN_TEMP']]
 
-        temp_max_axis = max(df_values_max) * 1.05
-        temp_min_axis =  0 if  min(df_values_min)>0 else min(df_values_min)* 1.05
+        temp_max_axis = np.round(max(df_values_max) *1.1,0)
+        temp_min_axis =  0 if  min(df_values_min)>0 else np.round(min(df_values_min)* 1.1,0)
         
         
 
         ##### Create Monthly Line Chart Data
-        df_values_avg_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).mean()
-        df_values_max_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).max()
-        df_values_min_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP',"MAX_TEMP","MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).min()
+        df_values_avg_monthly = temp_data_clean[['MONTH','year','DATE','AVG_TEMP']].groupby(['MONTH','year'], as_index=False).mean()
+        df_values_max_monthly = temp_data_clean[['MONTH','year','DATE',"MAX_TEMP"]].groupby(['MONTH','year'], as_index=False).max()
+        df_values_min_monthly = temp_data_clean[['MONTH','year','DATE',"MIN_TEMP"]].groupby(['MONTH','year'], as_index=False).min()
+
+        df_values_avg_monthly = df_values_avg_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
+        df_values_max_monthly = df_values_max_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
+        df_values_min_monthly = df_values_min_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
 
         df_values_avg_monthly = [value for value in df_values_avg_monthly['AVG_TEMP']]
         df_values_max_monthly = [value for value in df_values_max_monthly['MAX_TEMP']]
@@ -249,10 +333,13 @@ def display_temp():
         ##### Render Template
         
         return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
-                               num_columns=num_columns, stations = stations, date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
+                               num_columns=num_columns, stations = stations, counties = counties,date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
                                df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
                                df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,
-                               date_range_monthly=date_range_monthly,temp_threshold=temp_threshold, boxplot_name = boxplot_url ,boxplot_url = boxplot_url)
+                               date_range_monthly=date_range_monthly,temp_threshold=temp_threshold, boxplot_name = boxplot_url ,boxplot_url = boxplot_url,
+                               num_days_max_heat_threshold=num_days_max_heat_threshold,num_days_min_heat_threshold=num_days_min_heat_threshold,pct_days_max_heat_threshold=pct_days_max_heat_threshold,
+                               pct_days_min_heat_threshold=pct_days_min_heat_threshold,max_heat_threshold_filter=max_heat_threshold_filter,min_heat_threshold_filter=min_heat_threshold_filter,
+                               start_date_filter=start_date_filter,end_date_filter=end_date_filter)
                 
         #return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,num_columns=num_columns, stations = stations, location_filter=location_filter,start_date_filter=start_date_filter)
 
@@ -277,13 +364,14 @@ def display_temperature():
         num_columns = df.shape[1]
 
         stations = sorted(df['Station_Name'].unique())
+        counties = sorted(df['county'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
         
         
         
         return render_template('home/temperature_table.html',max_date=max_date,min_date=min_date, df_values=df_values, 
-                               labels=labels,num_columns=num_columns, stations = stations)
+                               labels=labels,num_columns=num_columns, stations = stations, counties = counties)
     if request.method == 'POST':
 
         df = cache.get("weather_data")
@@ -293,15 +381,18 @@ def display_temperature():
             df = df
 
         stations = sorted(df['Station_Name'].unique())
+        counties = sorted(df['county'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
 
-        location_filter = request.form.getlist('Station_Select')
+        #location_filter = request.form.getlist('Station_Select')
+        county_filter = request.form.getlist('County_Select')
         start_date_filter = request.form.get('temp-start')
         end_date_filter = request.form.get("temp-end")
         
         
-        df = df[df['Station_Name'].isin(location_filter)]
+        #df = df[df['Station_Name'].isin(location_filter)]
+        df = df[df['county'].isin(county_filter)]
         
         if len(df[df["DATE"]<=end_date_filter]) == 0:
             df = df.append(df.head(1),ignore_index=True)
@@ -318,7 +409,8 @@ def display_temperature():
        
         
         
-        return render_template('home/temperature_table.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,num_columns=num_columns, stations = stations, location_filter=location_filter,start_date_filter=start_date_filter)
+        return render_template('home/temperature_table.html',max_date=max_date,min_date=min_date, df_values=df_values, 
+                               labels=labels,num_columns=num_columns, stations = stations,counties = counties, start_date_filter=start_date_filter)
 
 
 @app.route('/download_rain_data')

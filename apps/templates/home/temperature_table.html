@@ -18,7 +18,16 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                    <div class="col-md-4">
+                        <div class="col-md-4">
+                            <form method="post" id="multiple_select_form2">
+                            <a>Select County(s)</a>
+                            <select  name="County_Select" id = "County_Select" class="form-control selectpicker"  method="post"  multiple data-live-search="true"  >
+                                {% for county in counties %}
+                                   <option name = "{{county}}" value= "{{county}}" SELECTED>{{county}}</option>
+                                   {% endfor %}
+                                   </select>    
+                            </div>   
+                    <!--<div class="col-md-4">
                         <form method="post" id="multiple_select_form2">
                         <a>Select Weather Station(s)</a>
                         <select  name="Station_Select" id = "Station_Select2" class="form-control selectpicker"  method="post"  multiple data-live-search="true"  >
@@ -26,7 +35,7 @@
                                <option name = "{{station}}" value= "{{station}}" SELECTED>{{station}}</option>
                                {% endfor %}
                                </select>    
-                        </div>                       
+                        </div>                  -->     
                            
                     <div class="col-md-2">
                     <div title="Your title here2!">Select Start Date</div>

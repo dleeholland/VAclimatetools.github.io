@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "gmu-capstone-2023",
+  "private_key_id": "7bc5f5f29d06b7d4d401852d0bad14cac79aa253",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDxFTdkKdjSpSZX\nsF+BTL7RecJhSZ6t+Bd1ncqh5zqtlizM7U5QP+Uw/knvUl5AQfTYWR+7ZmdRCuMw\nyaLMbY9Iz0bDAIy5iTsaB4w1oSoV+/8+g3IwRQkll6SrbI5McXXnYhM5J5l9riOa\np/S1fwlEsZ2CXdSNGGsPW1QMb3YAD9C/4CoLOtMBWVis6rhR6NcDLqLvEpjmWjEt\nQ+y9j/ylnXPETaNO1p178iYNGIkAP80YiBDFAsQ/xU3XU2F/D+iFq6QaPUdFM+JQ\nC6E05pPbCHOdMOQ0WfZRjaCEBX6+Ij57RzLKLV62RQ++zBZzPMuO8h9Ts3bqe7as\n1ISv8pTtAgMBAAECggEAAaTaSyTctVidjmtSk2akrHgCL9I/mNvmvEB857+HnAE4\np/yveobQNy/P7Q5b1ZNXKi+2/2E/SVAW/lFGep9kPHDEmkLQMtmxNsggMb0G6CR4\nq2jCqBQ1PKjjXUaw7h63jGh6TUfF8uBaBM12/5/XCwotBhaoT7GZbuVGb7+sB2vd\nmSO2c4sSO2tTFCtUwXnd5PCzm6FCR9y3At2e7NLDdJhnykozFR59O6adqGBEi72U\nlN4i74pfqZEafIEJm57tkWktHw63bJCzuxA6BfHOBuLk2EfyIVUDXRXXbXvEgsVp\n5qATsd47ayFpHHXdpSweFnRjuH8MXawPkQND7fXiMQKBgQD/fyQLyyC5DbD1F+6R\nBmUAGuc5RCxGDr865xUhlbphZUj9aeYHPuXehR94Y+pBE5ohT/jzOJ6mH6ZBiLOC\nS3A3P/gEMKpaVhUI/KlShM9UV/jU3SvwvebA+FRP8mRRw0d+WUK2N0x3Nr2DKFnn\niUxvjkMrT84TUTBdLqaH9QGIOQKBgQDxjs5W7dR1cGOJDIeuiYpFsIthdT56EcAn\nfea8dzxinxlpS5L9NFTnq3eXudXv7qMUpFh3CdYq4GJiDmVg6lZu6mx1yikw01Kx\nXJLkNtzkfloSIia96k9LSfvI6D61aDHWZNKjcYYsxnyy3qLtpWRS98KdlSCkUUYO\nsh4YcM8qVQKBgHHGLEcULX46mpKKFbJ/JnrlgBIASbbo2j9gqAhMpLK6Z8ZxYf3Y\nBIUSwvDZjXdtQzWSZ0nn7L4NWfvU5BshfNcdpVQ4V6PisXtPCBe3DJyCkEw6MVcD\nOb601tbDGelPDIc3OH3sIiD0P3Aoh+CTQ3Zp439mCl6PyPm1zHK+p/ABAoGAaxpI\nft6grxmP6Ho3xrmRJ2kpw6J6eyFXs6rtHW84xPmKCNfLap1DcBzkv89T/jgu8r4T\nw2QHI6ett5BuftQoUrF6OZfTP6TTK3TCZJG2y1ECmruttdMoKVe6XdArzb9PKaI2\niuWQ+lVfgOeaEgidPPRBxCEVAgZPK8Dp+yg5kqkCgYA9a34Df7IPKE9wObUzf6Zp\nclMwP7k0T/eUTIYErV9VShsTazDVdVpMF5Vb/E65vXujIZzbU6/9w21kgroXslIY\nNvEqdWocI3klucUP7s/lQNqjBUyzyuvbPURzPU0cmQ8PvKUHbpSpTXtXmTIs0nkq\n9BZU4WJmDq/ILZw4UWQX5Q==\n-----END PRIVATE KEY-----\n",
+  "client_email": "gmucapstone23@gmu-capstone-2023.iam.gserviceaccount.com",
+  "client_id": "103889016061125047454",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/gmucapstone23%40gmu-capstone-2023.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

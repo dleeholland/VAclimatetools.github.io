@@ -22,7 +22,16 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                    <div class="col-md-4">
+                      <div class="col-md-4">
+                        <form method="post" id="multiple_select_form2">
+                        <a><strong>Select County(s)</strong></a>
+                        <select  name="County_Select" id = "County_Select" class="form-control selectpicker"  method="post"  multiple data-live-search="true"  >
+                            {% for county in counties %}
+                               <option name = "{{county}}" value= "{{county}}" SELECTED>{{county}}</option>
+                               {% endfor %}
+                               </select>    
+                        </div>    
+                    <!--<div class="col-md-4">
                         <form method="post" id="multiple_select_form2">
                         <a>Select Weather Station(s)</a>
                         <select  name="Station_Select2" id = "Station_Select2" class="form-control selectpicker"  method="post"  multiple data-live-search="true"  >
@@ -30,10 +39,10 @@
                                <option name = "{{station}}" value= "{{station}}" SELECTED>{{station}}</option>
                                {% endfor %}
                                </select>    
-                        </div>                       
+                        </div> -->                      
                            
                     <div class="col-md-2">
-                    <div title="Your title here2!">Select Start Date</div>
+                    <div title="Your title here2!"><strong>Select Start Date</strong></div>
                     
                     <input type="date" id="start2" name="temp-start2"
                            value="{{min_date}}"
@@ -41,26 +50,37 @@
                         </div>
                     
                     <div class="col-md-2">
-                    <div title="Your title here!">Select End Date</div>
+                    <div title="Your title here!"><strong>Select End Date</strong></div>
                     <input type="date" id="end2" name="temp-end2"
                                   value="{{max_date}}"
                                   min="{{min_date}}" max="{{max_date}}">
 
                     </div>
                     <div class="col-md-2">
-                      <div title="Your title here!">Extreme Heat Threshold</div>
-                      <select name="heat-options" >
+                      <div title="Your title here!"><strong>Extreme Heat Threshold</strong></div>
+                      <div title="Your title here!">Daily  Min:
+                      <select name="min-heat-options" style="width: 80px">
+                        
+                        {% for temp in temp_threshold %}
+                          <option value="{{temp}}">{{temp}}</option>
+                        {% endfor %}
+                      </select>
+                      </div>
+
+                      <div title="Your title here!">Daily Max:
+                      <select name="max-heat-options" style="width: 80px">
                         
                         {% for temp in temp_threshold %}
                           <option value="{{temp}}">{{temp}}</option>
                         {% endfor %}
                       </select>
                     </div>
+                    </div>
 
 
                     <div class="col-md-2">
-                        <div title="Your title here!">Refresh Data</div>
-                        <input class= "btn btn-success" type = submit value = Submit><!--<input type = submit value = Submit>--> 
+                        <div title="Your title here!"><strong>Refresh Data</strong></div>
+                        <input class= "btn btn-success" type = submit value = Submit ><!--<input type = submit value = Submit>--> 
                         </div>
                       </form>
                 </div>
@@ -68,7 +88,15 @@
                          
                 </div>
             </div>
-            
+            <div class="card mb-4">
+              <div class="card-header">
+                  <i class="fas fa-chart-area me-1"></i>
+                  Take Aways
+              </div>
+              <p>&nbsp&nbsp The selected locations experienced <strong>{{num_days_max_heat_threshold}} days</strong> ({{pct_days_max_heat_threshold}}%) with daily max. temperatures at or above <strong>{{max_heat_threshold_filter}} degrees</strong> between <strong>{{start_date_filter}}</strong> and <strong>{{end_date_filter}}</strong>
+            <br>&nbsp&nbsp The selected locations experienced <strong>{{num_days_min_heat_threshold}} days</strong> ({{pct_days_min_heat_threshold}}%) with daily min. tempartures at or above <strong>{{min_heat_threshold_filter}} degrees</strong> between <strong>{{start_date_filter}}</strong> and <strong>{{end_date_filter}}</strong>
+            </p>
+            </div>
                        
 
             <div class="row">
@@ -94,10 +122,10 @@ var myLineChart = new Chart(ctx, {
       //backgroundColor: "rgba(0,0,0)",
       fill: false,
       borderColor: "rgba(73,82,91)",
-      pointRadius: 0,
+      pointRadius: 0.5,
       pointBackgroundColor: "rgba(73,82,91)",
       pointBorderColor: "rgba(73,82,89)",
-      pointHoverRadius: 5,
+      pointHoverRadius:0.5,
       pointHoverBackgroundColor: "rgba(73,82,91)",
       pointHitRadius: 50,
       pointBorderWidth: 2,
@@ -109,10 +137,10 @@ var myLineChart = new Chart(ctx, {
       //backgroundColor: "rgba(255, 0, 0, 0.2)",
       fill: false,
       borderColor: "rgba(255, 0, 0, 0.4)",
-      pointRadius: 0,
+      pointRadius: 0.5,
       pointBackgroundColor: "rgba(255, 0, 0, 0.4)",
       pointBorderColor: "rgba(255, 0, 0, 0.3)",
-      pointHoverRadius: 5,
+      pointHoverRadius: 0.5,
       pointHoverBackgroundColor: "rgba(255, 0, 0, 0.4)",
       pointHitRadius: 50,
       pointBorderWidth: 2,
@@ -124,10 +152,10 @@ var myLineChart = new Chart(ctx, {
       //backgroundColor: "rgba(2,117,216,0.2)",
       fill: false,
       borderColor: "rgba(2,117,216,1)",
-      pointRadius: 0,
+      pointRadius: 0.5,
       pointBackgroundColor: "rgba(2,117,216,1)",
       pointBorderColor: "rgba(255,255,255,0.8)",
-      pointHoverRadius: 5,
+      pointHoverRadius: 0.5,
       pointHoverBackgroundColor: "rgba(2,117,216,1)",
       pointHitRadius: 50,
       pointBorderWidth: 2,
@@ -211,7 +239,7 @@ var myLineChart = new Chart(ctx, {
       pointRadius: 0.5,
       pointBackgroundColor: "rgba(73,82,91)",
       pointBorderColor: "rgba(73,82,89)",
-      pointHoverRadius: 5,
+      pointHoverRadius: 1,
       pointHoverBackgroundColor: "rgba(73,82,91)",
       pointHitRadius: 50,
       pointBorderWidth: 2,
@@ -226,7 +254,7 @@ var myLineChart = new Chart(ctx, {
       pointRadius: 0.5,
       pointBackgroundColor: "rgba(255, 0, 0, 0.4)",
       pointBorderColor: "rgba(255, 0, 0, 0.3)",
-      pointHoverRadius: 5,
+      pointHoverRadius: 1,
       pointHoverBackgroundColor: "rgba(255, 0, 0, 0.4)",
       pointHitRadius: 50,
       pointBorderWidth: 2,
@@ -241,7 +269,7 @@ var myLineChart = new Chart(ctx, {
       pointRadius: 0.5,
       pointBackgroundColor: "rgba(2,117,216,1)",
       pointBorderColor: "rgba(255,255,255,0.8)",
-      pointHoverRadius: 5,
+      pointHoverRadius: 1,
       pointHoverBackgroundColor: "rgba(2,117,216,1)",
       pointHitRadius: 50,
       pointBorderWidth: 2,
@@ -288,7 +316,7 @@ var myLineChart = new Chart(ctx, {
                     <div class="card mb-4">
                         <div class="card-header">
                             <i class="fas fa-chart-bar me-1"></i>
-                            Bar Chart Example
+                            Geographic Map - Place Holder
                         </div>
                         <div class="card-body"><canvas id="myBarChart" width="100%" height="40"></canvas></div>
                     </div>
