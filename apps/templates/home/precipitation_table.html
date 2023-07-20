@@ -14,10 +14,64 @@
             
             
             <div class="card mb-4">
-                <div class="card-header">tha
+                <div class="card-header">
                     <i class="fas fa-table me-1"></i>
                     Precipitation Data (NOAA) - Display is limited to 500 observations
                 </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-filter me-1"></i>
+                        Data Filters
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <form method="post" id="multiple_select_form2">
+                                <a>Select County(s)</a>
+                                <select  name="County_Select" id = "County_Select" class="form-control selectpicker"  method="post"  multiple data-live-search="true"  >
+                                    {% for county in counties %}
+                                       <option name = "{{county}}" value= "{{county}}" SELECTED>{{county}}</option>
+                                       {% endfor %}
+                                       </select>    
+                                </div>   
+                        <!--<div class="col-md-4">
+                            <form method="post" id="multiple_select_form2">
+                            <a>Select Weather Station(s)</a>
+                            <select  name="Station_Select" id = "Station_Select2" class="form-control selectpicker"  method="post"  multiple data-live-search="true"  >
+                                {% for station in stations %}
+                                   <option name = "{{station}}" value= "{{station}}" SELECTED>{{station}}</option>
+                                   {% endfor %}
+                                   </select>    
+                            </div>                  -->     
+                               
+                        <div class="col-md-2">
+                        <div title="Your title here2!">Select Start Date</div>
+                        
+                        <input type="date" id="start2" name="prcp-start"
+                               value="{{min_date}}"
+                               min="{{min_date}}" max="{{max_date}}">
+                            </div>
+                        
+                        <div class="col-md-2">
+                        <div title="Your title here!">Select End Date</div>
+                        <input type="date" id="end2" name="prcp-end"
+                                      value="{{max_date}}"
+                                      min="{{min_date}}" max="{{max_date}}">
+    
+                        </div>
+                        <div class="col-md-2"></div>
+                        <div class="col-md-2">
+                            <div title="Your title here!">Refresh Data</div>
+                            <input class= "btn btn-success" type = submit value = Submit><!--<input type = submit value = Submit>--> 
+                            </div>
+                          </form>
+                    </div>
+                    
+                             
+                    </div>
+                </div>
+
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-bordered" id="datatablesSimple" width="100%" cellspacing="0">

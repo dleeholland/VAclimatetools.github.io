@@ -150,6 +150,8 @@ def display_temp():
         counties = sorted(df['county'].unique())
         max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
+
+        num_stations = len(stations)
         
 
         # Daily Line Chart Data
@@ -171,11 +173,19 @@ def display_temp():
         start_date_filter = min_date
         end_date_filter = max_date
 
-        num_days_max_heat_threshold = len(df_values_max.loc[df_values_max['MAX_TEMP']>=int(max_heat_threshold_filter)])
+        # Get takeaway metrics for extreme heat
+
+        df_values_max_threshold = df_values_max.loc[df_values_max['MAX_TEMP']>=int(max_heat_threshold_filter)]
+        num_days_max_heat_threshold = len(df_values_max_threshold['DATE'])
         pct_days_max_heat_threshold = np.round((num_days_max_heat_threshold/len(df_values_max['MAX_TEMP']))*100,0)
-        num_days_min_heat_threshold = len(df_values_min.loc[df_values_min['MIN_TEMP']>=int(min_heat_threshold_filter)])
+
+        df_values_min_threshold=df_values_min.loc[df_values_min['MIN_TEMP']>=int(min_heat_threshold_filter)]
+        num_days_min_heat_threshold = len(df_values_min_threshold['DATE'])
         pct_days_min_heat_threshold = np.round((num_days_min_heat_threshold/len(df_values_min['MIN_TEMP']))*100,0)
-        #num_days_minmax_heat_threshold = len(df_values_max.loc[df_values_max['MAX_TEMP']>=int(max_heat_threshold_filter) & df_values_max])
+
+        num_days_minmax_heat_threshold= len(df_values_min_threshold.merge(df_values_max_threshold, on=['DATE'], how='inner')['DATE'])
+        pct_days_minmax_heat_threshold = np.round((num_days_minmax_heat_threshold/len(df_values_min['MIN_TEMP']))*100,0)
+        
 
         df_values_avg = [value for value in df_values_avg['AVG_TEMP']]
         df_values_max = [value for value in df_values_max['MAX_TEMP']]
@@ -220,9 +230,9 @@ def display_temp():
         #plt.savefig(boxplot_url)
         boxplot_url = '/static/assets/img/temp_box.png'
 
-        gsodData = temp_data_clean
-        
-        
+        # Create Map Data
+
+           
 
 
         ##### Render Template
@@ -232,9 +242,11 @@ def display_temp():
                                df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
                                df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,
                                date_range_monthly=date_range_monthly,temp_threshold=temp_threshold, boxplot_name = boxplot_url ,boxplot_url = boxplot_url,
-                               num_days_max_heat_threshold=num_days_max_heat_threshold,num_days_min_heat_threshold=num_days_min_heat_threshold,pct_days_max_heat_threshold=pct_days_max_heat_threshold,
-                               pct_days_min_heat_threshold=pct_days_min_heat_threshold,max_heat_threshold_filter=max_heat_threshold_filter,min_heat_threshold_filter=min_heat_threshold_filter,
-                               start_date_filter=start_date_filter,end_date_filter=end_date_filter,gsodData=gsodData)
+                               num_days_max_heat_threshold=num_days_max_heat_threshold,num_days_min_heat_threshold=num_days_min_heat_threshold,
+                               pct_days_max_heat_threshold=pct_days_max_heat_threshold,pct_days_min_heat_threshold=pct_days_min_heat_threshold,max_heat_threshold_filter=max_heat_threshold_filter,
+                               min_heat_threshold_filter=min_heat_threshold_filter,num_days_minmax_heat_threshold=num_days_minmax_heat_threshold,
+                               pct_days_minmax_heat_threshold=pct_days_minmax_heat_threshold,start_date_filter=start_date_filter,end_date_filter=end_date_filter,
+                               num_stations=num_stations)
      
      if request.method == 'POST':
 
@@ -259,6 +271,8 @@ def display_temp():
         
         #df = df[df['Station_Name'].isin(location_filter)]
         df = df[df['county'].isin(county_filter)]
+
+        num_stations = len(df['Station_Name'].unique())
 
         if len(df[df["DATE"]<=pd.to_datetime(end_date_filter)]) == 0:
             df = df.append(df.head(1),ignore_index=True)
@@ -285,10 +299,20 @@ def display_temp():
         df_values_max = df_values_max.sort_values(by=['DATE'], ascending=[True])
         df_values_min = df_values_min.sort_values(by=['DATE'], ascending=[True])
 
-        num_days_max_heat_threshold = len(df_values_max.loc[df_values_max['MAX_TEMP']>=int(max_heat_threshold_filter)])
+        # Get takeaway metrics for extreme heat
+
+        df_values_max_threshold = df_values_max.loc[df_values_max['MAX_TEMP']>=int(max_heat_threshold_filter)]
+        num_days_max_heat_threshold = len(df_values_max_threshold['DATE'])
         pct_days_max_heat_threshold = np.round((num_days_max_heat_threshold/len(df_values_max['MAX_TEMP']))*100,0)
-        num_days_min_heat_threshold = len(df_values_max.loc[df_values_max['MIN_TEMP']>=int(min_heat_threshold_filter)])
+
+        df_values_min_threshold=df_values_min.loc[df_values_min['MIN_TEMP']>=int(min_heat_threshold_filter)]
+        num_days_min_heat_threshold = len(df_values_min_threshold['DATE'])
         pct_days_min_heat_threshold = np.round((num_days_min_heat_threshold/len(df_values_min['MIN_TEMP']))*100,0)
+
+        num_days_minmax_heat_threshold= len(df_values_min_threshold.merge(df_values_max_threshold, on=['DATE'], how='inner')['DATE'])
+        pct_days_minmax_heat_threshold = np.round((num_days_minmax_heat_threshold/len(df_values_min['MIN_TEMP']))*100,0)
+
+        
 
         df_values_avg = [value for value in df_values_avg['AVG_TEMP']]
         df_values_max = [value for value in df_values_max['MAX_TEMP']]
@@ -340,11 +364,12 @@ def display_temp():
                                df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
                                df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,
                                date_range_monthly=date_range_monthly,temp_threshold=temp_threshold, boxplot_name = boxplot_url ,boxplot_url = boxplot_url,
-                               num_days_max_heat_threshold=num_days_max_heat_threshold,num_days_min_heat_threshold=num_days_min_heat_threshold,pct_days_max_heat_threshold=pct_days_max_heat_threshold,
-                               pct_days_min_heat_threshold=pct_days_min_heat_threshold,max_heat_threshold_filter=max_heat_threshold_filter,min_heat_threshold_filter=min_heat_threshold_filter,
-                               start_date_filter=start_date_filter,end_date_filter=end_date_filter)
+                               num_days_max_heat_threshold=num_days_max_heat_threshold,num_days_min_heat_threshold=num_days_min_heat_threshold,
+                               pct_days_max_heat_threshold=pct_days_max_heat_threshold,pct_days_min_heat_threshold=pct_days_min_heat_threshold,max_heat_threshold_filter=max_heat_threshold_filter,
+                               min_heat_threshold_filter=min_heat_threshold_filter,num_days_minmax_heat_threshold=num_days_minmax_heat_threshold,
+                               pct_days_minmax_heat_threshold=pct_days_minmax_heat_threshold,start_date_filter=start_date_filter,end_date_filter=end_date_filter,
+                               num_stations=num_stations)
                 
-        #return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,num_columns=num_columns, stations = stations, location_filter=location_filter,start_date_filter=start_date_filter)
 
 
     
@@ -360,7 +385,7 @@ def display_temperature():
         else:
             df = df
 
-        cache.set("view_rain_data",df)
+        cache.set("view_temp_data",df)
 
         df_values = df.values
         labels = [row for row in df.columns]
@@ -403,7 +428,7 @@ def display_temperature():
 
         df = df[(df['DATE']<=end_date_filter) & (df['DATE']>=start_date_filter) ]
 
-        cache.set("view_rain_data",df)
+        cache.set("view_temp_data",df)
 
         df_values = df.values
         labels = [row for row in df.columns]
@@ -416,10 +441,10 @@ def display_temperature():
                                labels=labels,num_columns=num_columns, stations = stations,counties = counties, start_date_filter=start_date_filter)
 
 
-@app.route('/download_rain_data')
-def download_rain():
+@app.route('/download_temp_data')
+def download_temp():
     
-    df = cache.get("view_rain_data")
+    df = cache.get("view_temp_data")
 
     resp = make_response(df.to_csv())
     resp.headers["Content-Disposition"] = "attachment; filename= VCC_Temperature_Data_Export_on_{}.csv".format(datetime.today().strftime('%Y-%m-%d %I:%M:%S:%p'))
@@ -431,6 +456,7 @@ def download_rain():
 # App main route + generic routing
 @app.route('/precipitation_analysis', methods=['GET','POST'])
 def display_precip():
+    
 
     return render_template('home/precipitation_analysis.html')
 
@@ -438,14 +464,79 @@ def display_precip():
 @app.route('/precipitation_table', methods = ['GET','POST'])
 def display_precipitation():
 
-    if request.method == 'POST' or request.method == 'GET':
+    if request.method == 'GET':
         df = cache.get("weather_data")
-        df = df.drop(cache.get("temperature_columns"),axis=1)
+        if all(col in df.columns for col in cache.get("temperature_columns")):
+            df = df.drop(cache.get("temperature_columns"),axis=1)
+        else:
+            df = df
+
+        cache.set("view_prcp_data",df)
+
         df_values = df.values
         labels = [row for row in df.columns]
         num_columns = df.shape[1]
+
+        stations = sorted(df['Station_Name'].unique())
+        counties = sorted(df['county'].unique())
+        max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
+        min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
         
-        return render_template('home/precipitation_table.html', df_values=df_values, labels=labels,num_columns=num_columns)
+        
+        
+        return render_template('home/precipitation_table.html',max_date=max_date,min_date=min_date, df_values=df_values, 
+                               labels=labels,num_columns=num_columns, stations = stations, counties = counties)
+    if request.method == 'POST':
+
+        df = cache.get("weather_data")
+        if all(col in df.columns for col in cache.get("temperature_columns")):
+            df = df.drop(cache.get("temperature_columns"),axis=1)
+        else:
+            df = df
+
+        stations = sorted(df['Station_Name'].unique())
+        counties = sorted(df['county'].unique())
+        max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
+        min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
+
+        #location_filter = request.form.getlist('Station_Select')
+        county_filter = request.form.getlist('County_Select')
+        start_date_filter = request.form.get('prcp-start')
+        end_date_filter = request.form.get("prcp-end")
+        
+        
+        #df = df[df['Station_Name'].isin(location_filter)]
+        df = df[df['county'].isin(county_filter)]
+        
+        if len(df[df["DATE"]<=end_date_filter]) == 0:
+            df = df.append(df.head(1),ignore_index=True)
+            df.loc[len(df)-1,['DATE','year','Prcp']] = [pd.to_datetime(end_date_filter),np.NaN,np.NaN,np.NaN]
+
+        df = df[(df['DATE']<=end_date_filter) & (df['DATE']>=start_date_filter) ]
+
+        cache.set("view_prcp_data",df)
+
+        df_values = df.values
+        labels = [row for row in df.columns]
+        num_columns = df.shape[1]
+
+       
+        
+        
+        return render_template('home/precipitation_table.html',max_date=max_date,min_date=min_date, df_values=df_values, 
+                               labels=labels,num_columns=num_columns, stations = stations,counties = counties, start_date_filter=start_date_filter)
+    
+@app.route('/download_precp_data')
+def download_rain():
+    
+    df = cache.get("view_rain_data")
+
+    resp = make_response(df.to_csv())
+    resp.headers["Content-Disposition"] = "attachment; filename= VCC_Precipitation_Data_Export_on_{}.csv".format(datetime.today().strftime('%Y-%m-%d %I:%M:%S:%p'))
+    resp.headers["Content-Type"] = "text/csv"
+
+    return resp
+
 
 
 @app.route('/', defaults={'path': 'index.html'})
