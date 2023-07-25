@@ -23,7 +23,7 @@
                 <div class="card-body">
                     <div class="row">
                       <div class="col-md-4">
-                        <form method="post" id="multiple_select_form2">
+                        <form method="post" id="multiple_select_form2" >
                         <a><strong>Select County(s)</strong></a>
                         <select  name="County_Select" id = "County_Select" class="form-control selectpicker"  method="post"  multiple data-live-search="true"  >
                             {% for county in counties %}
@@ -58,8 +58,17 @@
                     </div>
                     <div class="col-md-2">
                       <div title="Your title here!"><strong>Extreme Rainfall Threshold</strong></div>
+                      <div title="Your title here!">Daily  Min:
+                      <select name="min-prcp-options" style="width: 80px">
+                        
+                        {% for prcp in prcp_threshold %}
+                          <option value="{{prcp}}">{{prcp}}</option>
+                        {% endfor %}
+                      </select>
+                      </div>
+
                       <div title="Your title here!">Daily Max:
-                      <select name="max-heat-options" style="width: 80px">
+                      <select name="max-prcp-options" style="width: 80px">
                         
                         {% for prcp in prcp_threshold %}
                           <option value="{{prcp}}">{{prcp}}</option>
@@ -79,13 +88,15 @@
                          
                 </div>
             </div>
-            <div class="card mb-4">
+            <div class="card mb-4">-
               <div class="card-header">
                   <i class="fas fa-chart-area me-1"></i>
                   Take Aways
               </div>
               <p> &nbsp&nbsp This analysis was aggregated data from <strong> {{num_stations}} </strong> weather stations in the selected county(s). 
-              <br>&nbsp&nbsp The selected locations experienced <strong>{{num_days_max_prcp_threshold}} days</strong> ({{pct_days_max_prcp_threshold}}%) with daily max. rainfall met or exceeded <strong>{{max_prcp_threshold_filter}} inches</strong> between <strong>{{start_date_filter}}</strong> and <strong>{{end_date_filter}}</strong>
+              <br>&nbsp&nbsp The selected locations experienced <strong>{{num_days_max_prcp_threshold}} days</strong> ({{pct_days_max_prcp_threshold}}%) with daily max. precipitation at or above <strong>{{max_prcp_threshold_filter}} inches</strong> between <strong>{{start_date_filter}}</strong> and <strong>{{end_date_filter}}</strong>
+              <br>&nbsp&nbsp The selected locations experienced <strong>{{num_days_min_prcp_threshold}} days</strong> ({{pct_days_min_prcp_threshold}}%) with daily min. precipitation at or above <strong>{{min_prcp_threshold_filter}} inches</strong> between <strong>{{start_date_filter}}</strong> and <strong>{{end_date_filter}}</strong>
+              <br>&nbsp&nbsp The selected locations experienced <strong>{{num_days_minmax_prcp_threshold}} days </strong> ({{pct_days_minmax_prcp_threshold}}%) experienced precipitation above the daily min. and daily max.
               </p>
             </div>
                        
@@ -95,7 +106,7 @@
                     <div class="card mb-4">
                         <div class="card-header">
                             <i class="fas fa-chart-area me-1"></i>
-                            Daily Temperature Over Time
+                            Daily Precipitation Over Time
                         </div>
                         <div class="card-body"><canvas id="prcp_over_time" width="100%" height="75%"></canvas></div>
                         <!-- START OF SCRIPT-->
@@ -108,7 +119,7 @@ var myLineChart = new Chart(ctx, {
   data: {
     labels: {{ date_range | safe }},
     datasets: [{
-      label: "Total Rainfall",
+      label: "Avg Precipitation",
       lineTension: 0.3,
       //backgroundColor: "rgba(0,0,0)",
       fill: false,
@@ -121,6 +132,36 @@ var myLineChart = new Chart(ctx, {
       pointHitRadius: 50,
       pointBorderWidth: 2,
       data: {{ df_values_avg | safe }}
+    },
+    {
+      label: "Max Precipitation",
+      lineTension: 0.3,
+      //backgroundColor: "rgba(255, 0, 0, 0.2)",
+      fill: false,
+      borderColor: "rgba(255, 0, 0, 0.4)",
+      pointRadius: 0.5,
+      pointBackgroundColor: "rgba(255, 0, 0, 0.4)",
+      pointBorderColor: "rgba(255, 0, 0, 0.3)",
+      pointHoverRadius: 0.5,
+      pointHoverBackgroundColor: "rgba(255, 0, 0, 0.4)",
+      pointHitRadius: 50,
+      pointBorderWidth: 2,
+      data: {{ df_values_max | safe }}
+    },
+    {
+      label: "Min Precipitation",
+      lineTension: 0.3,
+      //backgroundColor: "rgba(2,117,216,0.2)",
+      fill: false,
+      borderColor: "rgba(2,117,216,1)",
+      pointRadius: 0.5,
+      pointBackgroundColor: "rgba(2,117,216,1)",
+      pointBorderColor: "rgba(255,255,255,0.8)",
+      pointHoverRadius: 0.5,
+      pointHoverBackgroundColor: "rgba(2,117,216,1)",
+      pointHitRadius: 50,
+      pointBorderWidth: 2,
+      data: {{ df_values_min | safe }}
     }],
   },
   options: {
@@ -162,7 +203,7 @@ var myLineChart = new Chart(ctx, {
                     <div class="card mb-4">
                         <div class="card-header">
                             <i class="fas fa-chart-bar me-1"></i>
-                            Daily Precipitation
+                            Daily Precipitation Highs and Lows
                         </div>
                         
                         <!--<p>{{boxplot_name}}</p>-->
@@ -192,7 +233,7 @@ var myLineChart = new Chart(ctx, {
   data: {
     labels: {{ date_range_monthly | safe }},
     datasets: [{
-      label: "Total Rainfall",
+      label: "Avg Precipitation",
       lineTension: 0.3,
       fill: false,
       //backgroundColor: "rgba(0,0,0)",
@@ -205,6 +246,36 @@ var myLineChart = new Chart(ctx, {
       pointHitRadius: 50,
       pointBorderWidth: 2,
       data: {{ df_values_avg_monthly | safe }}
+    },
+    {
+      label: "Max Precipitation",
+      lineTension: 0.3,
+      //backgroundColor: "rgba(255, 0, 0, 0.2)",
+      fill: false,
+      borderColor: "rgba(255, 0, 0, 0.4)",
+      pointRadius: 0.5,
+      pointBackgroundColor: "rgba(255, 0, 0, 0.4)",
+      pointBorderColor: "rgba(255, 0, 0, 0.3)",
+      pointHoverRadius: 1,
+      pointHoverBackgroundColor: "rgba(255, 0, 0, 0.4)",
+      pointHitRadius: 50,
+      pointBorderWidth: 2,
+      data: {{ df_values_max_monthly | safe }}
+    },
+    {
+      label: "Min Precipitation",
+      lineTension: 0.3,
+      //backgroundColor: "rgba(2,117,216,0.2)",
+      fill: false,
+      borderColor: "rgba(2,117,216,1)",
+      pointRadius: 0.5,
+      pointBackgroundColor: "rgba(2,117,216,1)",
+      pointBorderColor: "rgba(255,255,255,0.8)",
+      pointHoverRadius: 1,
+      pointHoverBackgroundColor: "rgba(2,117,216,1)",
+      pointHitRadius: 50,
+      pointBorderWidth: 2,
+      data: {{ df_values_min_monthly | safe }}
     }],
   },
   options: {
