@@ -17,4 +17,4 @@ app = Flask(__name__)
 app.config.from_object( Config ) 
 
 # Import routing to render the pages
-from apps import views
+from apps import views_working
