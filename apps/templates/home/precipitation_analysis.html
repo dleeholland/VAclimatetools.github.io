@@ -90,7 +90,7 @@
             </div>
             <div class="card mb-4">-
               <div class="card-header">
-                  <i class="fas fa-chart-area me-1"></i>
+                  <i class="fas fa-info-circle me-1"></i>
                   Take Aways
               </div>
               <p> &nbsp&nbsp This analysis was aggregated data from <strong> {{num_stations}} </strong> weather stations in the selected county(s). 
@@ -222,7 +222,7 @@ var myLineChart = new Chart(ctx, {
                             <i class="fas fa-chart-area me-1"></i>
                             Monthly Precipitation Over Time
                         </div>
-                        <div class="card-body"><canvas id="monthly_prcp_over_time" width="100%" height="40"></canvas></div>
+                        <div class="card-body"><canvas id="monthly_prcp_over_time" width="100%" height="60%"></canvas></div>
                         <!-- START OF SCRIPT-->
                         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
 
@@ -318,9 +318,9 @@ var myLineChart = new Chart(ctx, {
                     <div class="card mb-4">
                         <div class="card-header">
                             <i class="fas fa-chart-bar me-1"></i>
-                            Geographic Map - Place Holder
+                            Average Precipitation Across Decades
                         </div>
-                        <div class="card-body"><canvas id="mapid" width="100%"></canvas></div>
+                        <div class="card-body"><img src = {{decades_url}} alt="Chart" width = "100%"  ></div>
                         
                     </div>
                 </div>

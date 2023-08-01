@@ -48,27 +48,38 @@ dpf.get_clean_data(cache)
 @app.route('/temperature_analysis', methods=['GET','POST'])
 def display_temp():
      
-     temp_threshold = list(range(70,110))
+    # Grab Data From Cache
+    df = cache.get("weather_data")
 
-     if request.method == 'GET':
-        df = cache.get("weather_data")
+    # If Cache has expired, refresh Cache with data
+    if df is None:
+        dpf.get_clean_data(cache)
 
-        if all(col in df.columns for col in cache.get("precipitation_columns")):
-            df = df.drop(cache.get("precipitation_columns"),axis=1)
-        else:
-            df = df
+    # Clear Unnecessary Columns
+    if all(col in df.columns for col in cache.get("precipitation_columns")):
+        df = df.drop(cache.get("precipitation_columns"),axis=1)
+    else:
+        df = df
+
+    # Populate Filters & Gather Info
+    stations = sorted(df['Station_Name'].unique())
+    counties = sorted(df['county'].unique())
+    max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
+    min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
+    num_stations = len(stations)
+    temp_threshold = list(range(70,110))
+
+    # 
+
+
+    if request.method == 'GET':
         
-        cache.set("view_rain_data",df)
-        df_values = df.values
-        labels = [row for row in df.columns]
-        num_columns = df.shape[1]
+        #cache.set("view_temp_data",df)
+        #df_values = df.values
+        #labels = [row for row in df.columns]
+        #num_columns = df.shape[1]
 
-        stations = sorted(df['Station_Name'].unique())
-        counties = sorted(df['county'].unique())
-        max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
-        min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
-
-        num_stations = len(stations)
+        
 
         # Store Truncated Data for 30 year average
         thirty_year_avg = df[(df['DATE']<=pd.to_datetime('12/31/2020')) & (df['DATE']>=pd.to_datetime('01/01/1991') ) ]
@@ -199,16 +210,7 @@ def display_temp():
      
      if request.method == 'POST':
 
-        df = cache.get("weather_data")
-        if all(col in df.columns for col in cache.get("precipitation_columns")):
-            df = df.drop(cache.get("precipitation_columns"),axis=1)
-        else:
-            df = df
-
-        stations = sorted(df['Station_Name'].unique())
-        counties = sorted(df['county'].unique())
-        max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
-        min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
+        
 
         #location_filter = request.form.getlist('Station_Select2')
         county_filter = request.form.getlist('County_Select')
