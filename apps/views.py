@@ -822,7 +822,7 @@ def display_precipitation():
         return render_template('home/precipitation_table.html',max_date=max_date,min_date=min_date, df_values=df_values, 
                                labels=labels,num_columns=num_columns, stations = stations,counties = counties, start_date_filter=start_date_filter)
     
-@app.route('/download_precp_data')
+@app.route('/download_prcp_data')
 def download_rain():
     
     df = cache.get("view_rain_data")
