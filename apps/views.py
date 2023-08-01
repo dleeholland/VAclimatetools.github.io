@@ -8,18 +8,7 @@ from flask   import render_template, request, send_file, send_from_directory, ma
 from jinja2  import TemplateNotFound
 import matplotlib
 
-
-
-# App modules
-from apps import app
-from flask_caching import Cache
-
-from io import StringIO
-
-cache = Cache(app,config={'CACHE_TYPE': 'simple','CACHE_DEFAULT_TIMEOUT':3600})
-
-app.config['UPLOAD_FOLDER'] = 'data'
-
+# Packages
 # Import Data
 import pandas as pd
 import numpy as np
@@ -28,133 +17,73 @@ from matplotlib import pyplot as plt
 matplotlib.use('agg')
 import seaborn as sb
 import os
+from io import StringIO
 from google.cloud import bigquery
 from google.oauth2 import service_account
 
-#weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_clean_extract.csv'))
-#weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_zip_extract.csv'))
-
-# GCP?
-refresh_data=False
-
-'''if refresh_data:
-    credentials = service_account.Credentials.from_service_account_file(
-            os.path.join(app.root_path,'config','gmu-capstone-2023-7bc5f5f29d06.json'))
-    client = bigquery.Client(credentials=credentials, project='gmu-capstone-2023')
-    
-    # compose the SQL query
-    sql = """
-    SELECT  *
-    FROM `gmu-capstone-2023.VA_NOAA_SORTED_ZIPS.VA_NOAA_SORTED_ZIPS1`
-    WHERE Year >= '2022' AND Station_ID != '999999'
-    
-    """
-    weather_data = client.query(sql).to_dataframe()
-    weather_data.to_csv(os.path.join(app.root_path,'data','gsod_zip_extract_gcp.csv'),index=False)
-    '''
-
-if refresh_data:
-    credentials = service_account.Credentials.from_service_account_file(
-            os.path.join(app.root_path,'config','va-climate-change-ccd123ee3fbe.json'))
-    client = bigquery.Client(credentials=credentials, project='va-climate-change')
-    
-    # compose the SQL query
-    sql = """
-    SELECT  Station_ID, Station_Name, date, Year, Mo, Da, Temp, Min, Max,Prcp,
-      Latitude, Longitude, county
-    FROM `va-climate-change.gsod_dataset.gsod_data_clean_zip`
-    WHERE Year >= '1960' AND Station_ID != '999999'
-    
-    """
-    weather_data = client.query(sql).to_dataframe()
-    weather_data.to_csv(os.path.join(app.root_path,'data','gsod_zip_extract_gcp.csv'),index=False)
-
-weather_data = pd.read_csv(os.path.join(app.root_path,'data','gsod_zip_extract_gcp.csv'))
 
 
 
-##### Data Cleansing
-
-weather_data['DATE'] = pd.to_datetime(dict(year=weather_data.Year, month=weather_data.Mo, day=weather_data.Da))
-#weather_data = weather_data.drop('date',axis=1)
-#weather_data= weather_data.sort_values(by=['Station_ID','DATE'], ascending=[True,True])
-weather_data= weather_data.sort_values(by=['DATE'], ascending=[True])
-station_list = weather_data[['Station_ID','Station_Name']].drop_duplicates(subset=['Station_ID'])
-weather_data = pd.merge(weather_data, station_list,how="outer", on=["Station_ID"])
-weather_data = weather_data.drop(['Station_Name_x'],axis=1)
-weather_data.rename(columns = {"Station_Name_y": "Station_Name",
-                               "Year":"year",
-                               "Da":"DAY",
-                               "Mo":"MONTH",
-                                "Temp":"AVG_TEMP",
-                                "Max":"MAX_TEMP",
-                                "Min":"MIN_TEMP"}, 
-          inplace = True)
-
-weather_data['MONTH_Name'] = weather_data['DATE'].dt.strftime('%b')
-
-# Correct Max / Min Temp days
-# Where MAX/MIN are both null or 999.9 = Min/Max = Avg
-weather_data.loc[ (weather_data['MIN_TEMP']==9999.9) & (weather_data['MAX_TEMP'] == 9999.9),['MIN_TEMP','MAX_TEMP']] = weather_data['AVG_TEMP']
-# Where MAX/AVG are known but MIN is not....calculate MIN
-weather_data.loc[ (weather_data['MIN_TEMP']==9999.9) & (weather_data['MAX_TEMP'] != 9999.9),['MIN_TEMP']] = (weather_data['AVG_TEMP']*2)-weather_data['MAX_TEMP']
-# Where MIN/AVG are known but MAX is not....calculate MAX
-weather_data.loc[ (weather_data['MIN_TEMP']!=9999.9) & (weather_data['MAX_TEMP'] == 9999.9),['MAX_TEMP']] = (weather_data['AVG_TEMP']*2)-weather_data['MIN_TEMP']
-
-# Where Prcp = 99.99 set to 0
-weather_data.loc[ (weather_data['Prcp']==99.99) ,['Prcp']] = 0
-
-#weather_data['DATE'] = pd.to_datetime(weather_data['DATE'])
-desc_cols = ['Station_ID',
-             'Station_Name',
-             'DATE',
-             'year',
-             'MONTH',
-             'DAY',
-             'Latitude',
-             'Longitude',
-             'zip_code'
-             'city',
-             'county']
-
-temp_cols = ['AVG_TEMP',
-             'MAX_TEMP',
-             'MIN_TEMP']
-
-precip_cols = ['Prcp']
+# App modules
+from apps import app
+from flask_caching import Cache
+from apps import data_processing_functions as dpf
 
 
-cache.set("weather_data", weather_data)
-cache.set('descriptive_columns',desc_cols)
-cache.set('precipitation_columns',precip_cols)
-cache.set('temperature_columns',temp_cols)
 
 
+
+cache = Cache(app,config={'CACHE_TYPE': 'simple','CACHE_DEFAULT_TIMEOUT':3600})
+
+app.config['UPLOAD_FOLDER'] = 'data'
+
+dpf.data_refresh(cache)
+
+
+# Read and clean data
+
+dpf.get_clean_data(cache)
 
 # App main route + generic routing
 @app.route('/temperature_analysis', methods=['GET','POST'])
 def display_temp():
-     temp_threshold = list(range(70,110))
+     
+    # Grab Data From Cache
+    df = cache.get("weather_data")
 
-     if request.method == 'GET':
-        df = cache.get("weather_data")
+    # If Cache has expired, refresh Cache with data
+    if df is None:
+        dpf.get_clean_data(cache)
 
-        if all(col in df.columns for col in cache.get("precipitation_columns")):
-            df = df.drop(cache.get("precipitation_columns"),axis=1)
-        else:
-            df = df
+    # Clear Unnecessary Columns
+    if all(col in df.columns for col in cache.get("precipitation_columns")):
+        df = df.drop(cache.get("precipitation_columns"),axis=1)
+    else:
+        df = df
+
+    # Populate Filters & Gather Info
+    stations = sorted(df['Station_Name'].unique())
+    counties = sorted(df['county'].unique())
+    max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
+    min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
+    num_stations = len(stations)
+    temp_threshold = list(range(70,110))
+
+    # 
+
+
+    if request.method == 'GET':
         
-        cache.set("view_rain_data",df)
-        df_values = df.values
-        labels = [row for row in df.columns]
-        num_columns = df.shape[1]
+        #cache.set("view_temp_data",df)
+        #df_values = df.values
+        #labels = [row for row in df.columns]
+        #num_columns = df.shape[1]
 
-        stations = sorted(df['Station_Name'].unique())
-        counties = sorted(df['county'].unique())
-        max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
-        min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
+        
 
-        num_stations = len(stations)
+        # Store Truncated Data for 30 year average
+        thirty_year_avg = df[(df['DATE']<=pd.to_datetime('12/31/2020')) & (df['DATE']>=pd.to_datetime('01/01/1991') ) ]
+        thirty_year_avg_monthly = thirty_year_avg[['MONTH','AVG_TEMP']].groupby("MONTH", as_index=False).mean()
         
 
         # Daily Line Chart Data
@@ -207,6 +136,10 @@ def display_temp():
         df_values_max_monthly = df_values_max_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
         df_values_min_monthly = df_values_min_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
 
+        # Pull out data for overtime
+        df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+
+
         df_values_avg_monthly = [value for value in df_values_avg_monthly['AVG_TEMP']]
         df_values_max_monthly = [value for value in df_values_max_monthly['MAX_TEMP']]
         df_values_min_monthly = [value for value in df_values_min_monthly['MIN_TEMP']]
@@ -233,7 +166,31 @@ def display_temp():
         #plt.savefig(boxplot_url)
         boxplot_url = '/static/assets/img/temp_box.png'
 
-        # Create Map Data
+        # Create Yearly Data
+        sb.reset_defaults()
+        plt.figure(figsize=(10, 6))
+        years = sorted(df_values_avg_monthly_decades['year'].unique())
+        for year in years:
+            df_year = df_values_avg_monthly_decades[df_values_avg_monthly_decades['year'] == year]
+            months = df_year['MONTH'].sort_values().tolist()
+            avg_prcp = df_year.sort_values(by='MONTH')['AVG_TEMP'].tolist()
+            plt.plot(months, avg_prcp, label=year, marker='o')
+            
+        # Customize the plot
+        plt.xlabel('Month')
+        plt.ylabel('Average Precipitation (inches)')
+        plt.title(f'Monthly Average Precipitation Across {years}'.format(years))
+        plt.xticks(range(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
+        plt.legend()
+        plt.grid()
+        plt.tight_layout()
+
+        #boxplot_url = str(os.path.join(app.root_path,'static','assets','img','temp_box.png'))
+        plt.savefig(os.path.join(app.root_path, 'static','assets','img','decade_lines.png'))
+        #plt.savefig(boxplot_url)
+        decades_url = '/static/assets/img/decade_lines.png'
+
+        
 
            
 
@@ -249,20 +206,11 @@ def display_temp():
                                pct_days_max_heat_threshold=pct_days_max_heat_threshold,pct_days_min_heat_threshold=pct_days_min_heat_threshold,max_heat_threshold_filter=max_heat_threshold_filter,
                                min_heat_threshold_filter=min_heat_threshold_filter,num_days_minmax_heat_threshold=num_days_minmax_heat_threshold,
                                pct_days_minmax_heat_threshold=pct_days_minmax_heat_threshold,start_date_filter=start_date_filter,end_date_filter=end_date_filter,
-                               num_stations=num_stations)
+                               num_stations=num_stations,decades_url=decades_url)
      
      if request.method == 'POST':
 
-        df = cache.get("weather_data")
-        if all(col in df.columns for col in cache.get("precipitation_columns")):
-            df = df.drop(cache.get("precipitation_columns"),axis=1)
-        else:
-            df = df
-
-        stations = sorted(df['Station_Name'].unique())
-        counties = sorted(df['county'].unique())
-        max_date = str(df['DATE'].max().strftime("%Y-%m-%d")) 
-        min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
+        
 
         #location_filter = request.form.getlist('Station_Select2')
         county_filter = request.form.getlist('County_Select')
@@ -270,13 +218,7 @@ def display_temp():
         end_date_filter = request.form.get("temp-end2")
         max_heat_threshold_filter = request.form.get("max-heat-options")
         min_heat_threshold_filter = request.form.get("min-heat-options")
-        #colorblind_filter = request.form.getlist('colorblind_check')
-        colorblind_filter=False
-
-        if colorblind_filter == True:
-            chartcolors = ["rgba(73,82,91)","rgba(255, 0, 0, 0.4)","rgba(2,117,216,1)"]
-        else:
-            chartcolors = ["rgba(73,82,91)","rgba(255, 0, 0, 0.4)","rgba(2,117,216,1)"]
+        
 
         
         
@@ -289,6 +231,11 @@ def display_temp():
             df = df.append(df.head(1),ignore_index=True)
             df.loc[len(df)-1,['DATE','year','MONTH','DAY','AVG_TEMP','MAX_TEMP','MIN_TEMP']] = [pd.to_datetime(end_date_filter),np.NaN,np.NaN,np.NaN,np.Nan,np.Nan,np.Nan]
 
+        # Store Truncated Data for 30 year average
+        thirty_year_avg = df[(df['DATE']<=pd.to_datetime('12/31/2020')) & (df['DATE']>=pd.to_datetime('01/01/1991') ) ]
+        thirty_year_avg_monthly = thirty_year_avg[['MONTH','AVG_TEMP']].groupby("MONTH", as_index=False).mean()
+
+        # Limit Data
         df = df[(df['DATE']<=end_date_filter) & (df['DATE']>=start_date_filter) ]
 
         cache.set("view_rain_data",df)
@@ -343,6 +290,8 @@ def display_temp():
         df_values_max_monthly = df_values_max_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
         df_values_min_monthly = df_values_min_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
 
+        df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+
         df_values_avg_monthly = [value for value in df_values_avg_monthly['AVG_TEMP']]
         df_values_max_monthly = [value for value in df_values_max_monthly['MAX_TEMP']]
         df_values_min_monthly = [value for value in df_values_min_monthly['MIN_TEMP']]
@@ -368,6 +317,37 @@ def display_temp():
         #plt.savefig(boxplot_url)
         boxplot_url = '/static/assets/img/temp_box.png'
 
+
+        # Create Yearly Data
+        sb.reset_defaults()
+        plt.clf()
+        plt.figure(figsize=(10, 6))
+        years = sorted(df_values_avg_monthly_decades['year'].unique())
+        for year in years:
+            df_year = df_values_avg_monthly_decades[df_values_avg_monthly_decades['year'] == year]
+            months = df_year['MONTH'].sort_values().tolist()
+            avg_prcp = df_year.sort_values(by='MONTH')['AVG_TEMP'].tolist()
+            plt.plot(months, avg_prcp, label=year, marker='o')
+            
+        # Customize the plot
+        
+        plt.plot(months, thirty_year_avg_monthly['AVG_TEMP'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
+        plt.xlabel('Month', fontsize=14)
+        plt.ylabel('Average Temperature', fontsize=14)
+        plt.title(f'Monthly Average Temperature Across {years}'.format(years), fontsize=16)
+        plt.xticks(range(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.legend()
+        plt.grid()
+        plt.tight_layout()
+
+        #boxplot_url = str(os.path.join(app.root_path,'static','assets','img','temp_box.png'))
+        plt.savefig(os.path.join(app.root_path, 'static','assets','img','decade_lines.png'))
+        plt.clf()
+        #plt.savefig(boxplot_url)
+        decades_url = '/static/assets/img/decade_lines.png'
+
+
         ##### Render Template
         
         return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
@@ -379,7 +359,7 @@ def display_temp():
                                pct_days_max_heat_threshold=pct_days_max_heat_threshold,pct_days_min_heat_threshold=pct_days_min_heat_threshold,max_heat_threshold_filter=max_heat_threshold_filter,
                                min_heat_threshold_filter=min_heat_threshold_filter,num_days_minmax_heat_threshold=num_days_minmax_heat_threshold,
                                pct_days_minmax_heat_threshold=pct_days_minmax_heat_threshold,start_date_filter=start_date_filter,end_date_filter=end_date_filter,
-                               num_stations=num_stations)
+                               num_stations=num_stations,decades_url=decades_url)
                 
 
 
@@ -488,6 +468,10 @@ def display_precip():
         min_date = str(df['DATE'].min().strftime("%Y-%m-%d"))
 
         num_stations = len(stations)
+
+        # Store Truncated Data for 30 year average
+        thirty_year_avg = df[(df['DATE']<=pd.to_datetime('12/31/2020')) & (df['DATE']>=pd.to_datetime('01/01/1991') ) ]
+        thirty_year_avg_monthly = thirty_year_avg[['MONTH','Prcp']].groupby("MONTH", as_index=False).mean()
         
 
         # Daily Line Chart Data
@@ -540,6 +524,8 @@ def display_precip():
         df_values_max_monthly = df_values_max_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
         df_values_min_monthly = df_values_min_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
 
+        df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+
         df_values_avg_monthly = [value for value in df_values_avg_monthly['Prcp']]
         df_values_max_monthly = [value for value in df_values_max_monthly['Prcp']]
         df_values_min_monthly = [value for value in df_values_min_monthly['Prcp']]
@@ -566,7 +552,34 @@ def display_precip():
         #plt.savefig(boxplot_url)
         boxplot_url = '/static/assets/img/prcp_box.png'
 
-        # Create Map Data
+         # Create Yearly Data
+        sb.reset_defaults()
+        plt.clf()
+        plt.figure(figsize=(10, 6))
+        years = sorted(df_values_avg_monthly_decades['year'].unique())
+        for year in years:
+            df_year = df_values_avg_monthly_decades[df_values_avg_monthly_decades['year'] == year]
+            months = df_year['MONTH'].sort_values().tolist()
+            avg_prcp = df_year.sort_values(by='MONTH')['Prcp'].tolist()
+            plt.plot(months, avg_prcp, label=year, marker='o')
+            
+        # Customize the plot
+        
+        plt.plot(months, thirty_year_avg_monthly['Prcp'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
+        plt.xlabel('Month', fontsize=14)
+        plt.ylabel('Average Precipitation', fontsize=14)
+        plt.title(f'Monthly Average Precipitation Across {years}'.format(years), fontsize=16)
+        plt.xticks(range(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.legend()
+        plt.grid()
+        plt.tight_layout()
+
+        #boxplot_url = str(os.path.join(app.root_path,'static','assets','img','temp_box.png'))
+        plt.savefig(os.path.join(app.root_path, 'static','assets','img','prcp_decade_lines.png'))
+        plt.clf()
+        #plt.savefig(boxplot_url)
+        decades_url = '/static/assets/img/prcp_decade_lines.png'
 
            
 
@@ -582,7 +595,7 @@ def display_precip():
                                pct_days_max_prcp_threshold=pct_days_max_prcp_threshold,pct_days_min_prcp_threshold=pct_days_min_prcp_threshold,max_prcp_threshold_filter=max_prcp_threshold_filter,
                                min_prcp_threshold_filter=min_prcp_threshold_filter,num_days_minmax_prcp_threshold=num_days_minmax_prcp_threshold,
                                pct_days_minmax_prcp_threshold=pct_days_minmax_prcp_threshold,start_date_filter=start_date_filter,end_date_filter=end_date_filter,
-                               num_stations=num_stations)
+                               num_stations=num_stations,decades_url=decades_url)
      
     if request.method == 'POST':
 
@@ -613,6 +626,11 @@ def display_precip():
         if len(df[df["DATE"]<=pd.to_datetime(end_date_filter)]) == 0:
             df = df.append(df.head(1),ignore_index=True)
             df.loc[len(df)-1,['DATE','year','MONTH','DAY','Prcp']] = [pd.to_datetime(end_date_filter),np.NaN,np.NaN,np.NaN,np.Nan]
+
+
+        # Store Truncated Data for 30 year average
+        thirty_year_avg = df[(df['DATE']<=pd.to_datetime('12/31/2020')) & (df['DATE']>=pd.to_datetime('01/01/1991') ) ]
+        thirty_year_avg_monthly = thirty_year_avg[['MONTH','Prcp']].groupby("MONTH", as_index=False).mean()
 
         df = df[(df['DATE']<=end_date_filter) & (df['DATE']>=start_date_filter) ]
 
@@ -668,6 +686,8 @@ def display_precip():
         df_values_max_monthly = df_values_max_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
         df_values_min_monthly = df_values_min_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
 
+        df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+
         df_values_avg_monthly = [value for value in df_values_avg_monthly['Prcp']]
         df_values_max_monthly = [value for value in df_values_max_monthly['Prcp']]
         df_values_min_monthly = [value for value in df_values_min_monthly['Prcp']]
@@ -693,6 +713,35 @@ def display_precip():
         #plt.savefig(boxplot_url)
         boxplot_url = '/static/assets/img/prcp_box.png'
 
+         # Create Yearly Data
+        sb.reset_defaults()
+        plt.clf()
+        plt.figure(figsize=(10, 6))
+        years = sorted(df_values_avg_monthly_decades['year'].unique())
+        for year in years:
+            df_year = df_values_avg_monthly_decades[df_values_avg_monthly_decades['year'] == year]
+            months = df_year['MONTH'].sort_values().tolist()
+            avg_prcp = df_year.sort_values(by='MONTH')['Prcp'].tolist()
+            plt.plot(months, avg_prcp, label=year, marker='o')
+            
+        # Customize the plot
+        
+        plt.plot(months, thirty_year_avg_monthly['Prcp'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
+        plt.xlabel('Month', fontsize=14)
+        plt.ylabel('Average Precipitation', fontsize=14)
+        plt.title(f'Monthly Average Precipitation Across {years}'.format(years), fontsize=16)
+        plt.xticks(range(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.legend()
+        plt.grid()
+        plt.tight_layout()
+
+        #boxplot_url = str(os.path.join(app.root_path,'static','assets','img','temp_box.png'))
+        plt.savefig(os.path.join(app.root_path, 'static','assets','img','prcp_decade_lines.png'))
+        plt.clf()
+        #plt.savefig(boxplot_url)
+        decades_url = '/static/assets/img/prcp_decade_lines.png'
+
         ##### Render Template
         
         return render_template('home/precipitation_analysis.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
@@ -704,7 +753,7 @@ def display_precip():
                                pct_days_max_prcp_threshold=pct_days_max_prcp_threshold,pct_days_min_prcp_threshold=pct_days_min_prcp_threshold,max_prcp_threshold_filter=max_prcp_threshold_filter,
                                min_prcp_threshold_filter=min_prcp_threshold_filter,num_days_minmax_prcp_threshold=num_days_minmax_prcp_threshold,
                                pct_days_minmax_prcp_threshold=pct_days_minmax_prcp_threshold,start_date_filter=start_date_filter,end_date_filter=end_date_filter,
-                               num_stations=num_stations)
+                               num_stations=num_stations,decades_url=decades_url)
     
 
     #return render_template('home/precipitation_analysis.html')
