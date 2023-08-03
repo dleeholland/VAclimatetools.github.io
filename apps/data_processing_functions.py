@@ -14,7 +14,7 @@ from flask_caching import Cache
 
 
 def data_refresh(cache):
-    if datetime.today().day == 10:
+    if datetime.today().day == 3:
          refresh_data=True
     else:
          refresh_data = False

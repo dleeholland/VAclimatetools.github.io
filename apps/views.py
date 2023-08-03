@@ -73,6 +73,9 @@ def display_temp():
         # Store Truncated Data for 30 year average
         thirty_year_avg = df[(df['DATE']<=pd.to_datetime('12/31/2020')) & (df['DATE']>=pd.to_datetime('01/01/1991') ) ]
         thirty_year_avg_monthly = thirty_year_avg[['MONTH','AVG_TEMP']].groupby("MONTH", as_index=False).mean()
+
+        # Limit to last 2 years
+        df = df[df['year'] >= (df['year'].max()-3)]
         
 
         # Daily Line Chart Data
@@ -91,8 +94,8 @@ def display_temp():
 
         max_heat_threshold_filter = 88
         min_heat_threshold_filter = 88
-        start_date_filter = min_date
-        end_date_filter = max_date
+        start_date_filter = str(df['DATE'].min().strftime("%Y-%m-%d")) 
+        end_date_filter = str(df['DATE'].max().strftime("%Y-%m-%d"))
 
         # Get takeaway metrics for extreme heat
 
@@ -166,6 +169,7 @@ def display_temp():
             plt.plot(months, avg_prcp, label=year, marker='o')
             
         # Customize the plot
+        plt.plot(months, thirty_year_avg_monthly['AVG_TEMP'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
         plt.xlabel('Month')
         plt.ylabel('Average Precipitation (inches)')
         plt.title(f'Monthly Average Precipitation Across {years}'.format(years))
@@ -470,6 +474,8 @@ def display_precip():
         # Store Truncated Data for 30 year average
         thirty_year_avg = df[(df['DATE']<=pd.to_datetime('12/31/2020')) & (df['DATE']>=pd.to_datetime('01/01/1991') ) ]
         thirty_year_avg_monthly = thirty_year_avg[['MONTH','Prcp']].groupby("MONTH", as_index=False).mean()
+
+        df = df[df['year'] >= (df['year'].max()-3)]
         
 
         # Daily Line Chart Data
@@ -488,8 +494,8 @@ def display_precip():
 
         max_prcp_threshold_filter = 10
         min_prcp_threshold_filter = 0
-        start_date_filter = min_date
-        end_date_filter = max_date
+        start_date_filter = str(df['DATE'].min().strftime("%Y-%m-%d")) 
+        end_date_filter = str(df['DATE'].max().strftime("%Y-%m-%d"))
 
         # Get takeaway metrics for precipitation
 
