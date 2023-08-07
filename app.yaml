@@ -1,5 +1,6 @@
 runtime: python37
-memory_gb: 15
+resources:
+  memory_gb: 15
 
 handlers:
 - url: /static
