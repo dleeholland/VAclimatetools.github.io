@@ -71,7 +71,7 @@ def display_temp():
         num_stations = len(stations)
 
         # Store Truncated Data for 30 year average
-        thirty_year_avg = df[(df['DATE']<=pd.to_datetime('12/31/2020')) & (df['DATE']>=pd.to_datetime('01/01/1991') ) ]
+        thirty_year_avg = df[(df['year']<=2020) & (df['year']>=1991) ]
         thirty_year_avg_monthly = thirty_year_avg[['MONTH','AVG_TEMP']].groupby("MONTH", as_index=False).mean()
 
         # Limit to last 2 years
@@ -129,7 +129,8 @@ def display_temp():
         df_values_min_monthly = df_values_min_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
 
         # Pull out data for overtime
-        df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+        #df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+        df_values_avg_monthly_decades = df_values_avg_monthly
 
 
         df_values_avg_monthly = [value for value in df_values_avg_monthly['AVG_TEMP']]
@@ -169,9 +170,10 @@ def display_temp():
             plt.plot(months, avg_prcp, label=year, marker='o')
             
         # Customize the plot
-        plt.plot(months, thirty_year_avg_monthly['AVG_TEMP'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
+        month_order = [1,2,3,4,5,6,7,8,9,10,11,12]
+        plt.plot(month_order, thirty_year_avg_monthly['AVG_TEMP'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
         plt.xlabel('Month')
-        plt.ylabel('Average Precipitation (inches)')
+        plt.ylabel('Average Temperature (F)')
         plt.title(f'Monthly Average Precipitation Across {years}'.format(years))
         plt.xticks(range(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
         plt.legend()
@@ -292,7 +294,8 @@ def display_temp():
         df_values_max_monthly = df_values_max_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
         df_values_min_monthly = df_values_min_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
 
-        df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+        #df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+        df_values_avg_monthly_decades = df_values_avg_monthly
 
         df_values_avg_monthly = [value for value in df_values_avg_monthly['AVG_TEMP']]
         df_values_max_monthly = [value for value in df_values_max_monthly['MAX_TEMP']]
@@ -333,11 +336,12 @@ def display_temp():
             
         # Customize the plot
         
-        plt.plot(months, thirty_year_avg_monthly['AVG_TEMP'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
-        plt.xlabel('Month', fontsize=14)
-        plt.ylabel('Average Temperature', fontsize=14)
-        plt.title(f'Monthly Average Temperature Across {years}'.format(years), fontsize=16)
-        plt.xticks(range(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], fontsize=12)
+        month_order = [1,2,3,4,5,6,7,8,9,10,11,12]
+        plt.plot(month_order, thirty_year_avg_monthly['AVG_TEMP'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
+        plt.xlabel('Month')
+        plt.ylabel('Average Temperature (F)')
+        plt.title(f'Monthly Average Precipitation Across {years}'.format(years))
+        plt.xticks(range(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
         plt.yticks(fontsize=12)
         plt.legend()
         plt.grid()
@@ -528,7 +532,8 @@ def display_precip():
         df_values_max_monthly = df_values_max_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
         df_values_min_monthly = df_values_min_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
 
-        df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+        #df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+        df_values_avg_monthly_decades = df_values_avg_monthly
 
         df_values_avg_monthly = [value for value in df_values_avg_monthly['Prcp']]
         df_values_max_monthly = [value for value in df_values_max_monthly['Prcp']]
@@ -569,7 +574,8 @@ def display_precip():
             
         # Customize the plot
         
-        plt.plot(months, thirty_year_avg_monthly['Prcp'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
+        month_order = [1,2,3,4,5,6,7,8,9,10,11,12]
+        plt.plot(month_order, thirty_year_avg_monthly['AVG_TEMP'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
         plt.xlabel('Month', fontsize=14)
         plt.ylabel('Average Precipitation', fontsize=14)
         plt.title(f'Monthly Average Precipitation Across {years}'.format(years), fontsize=16)
@@ -690,7 +696,8 @@ def display_precip():
         df_values_max_monthly = df_values_max_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
         df_values_min_monthly = df_values_min_monthly.sort_values(by=['year','MONTH'], ascending=[True,True])
 
-        df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+        #df_values_avg_monthly_decades = df_values_avg_monthly.loc[df_values_avg_monthly['year'] % 10 == 0 ]
+        df_values_avg_monthly_decades = df_values_avg_monthly
 
         df_values_avg_monthly = [value for value in df_values_avg_monthly['Prcp']]
         df_values_max_monthly = [value for value in df_values_max_monthly['Prcp']]
@@ -730,7 +737,8 @@ def display_precip():
             
         # Customize the plot
         
-        plt.plot(months, thirty_year_avg_monthly['Prcp'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
+        month_order = [1,2,3,4,5,6,7,8,9,10,11,12]
+        plt.plot(month_order, thirty_year_avg_monthly['AVG_TEMP'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
         plt.xlabel('Month', fontsize=14)
         plt.ylabel('Average Precipitation', fontsize=14)
         plt.title(f'Monthly Average Precipitation Across {years}'.format(years), fontsize=16)
