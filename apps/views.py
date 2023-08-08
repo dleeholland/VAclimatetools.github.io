@@ -499,7 +499,7 @@ def display_precip():
         df_values_min = df_values_min.sort_values(by=['DATE'], ascending=[True])
 
         max_prcp_threshold_filter = 10
-        min_prcp_threshold_filter = 0
+        min_prcp_threshold_filter = 2
         start_date_filter = str(df['DATE'].min().strftime("%Y-%m-%d")) 
         end_date_filter = str(df['DATE'].max().strftime("%Y-%m-%d"))
 
@@ -577,7 +577,7 @@ def display_precip():
         # Customize the plot
         
         month_order = [1,2,3,4,5,6,7,8,9,10,11,12]
-        plt.plot(month_order, thirty_year_avg_monthly['AVG_TEMP'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
+        plt.plot(month_order, thirty_year_avg_monthly['Prcp'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
         plt.xlabel('Month', fontsize=14)
         plt.ylabel('Average Precipitation', fontsize=14)
         plt.title(f'Monthly Average Precipitation Across {years}'.format(years), fontsize=16)
@@ -740,7 +740,7 @@ def display_precip():
         # Customize the plot
         
         month_order = [1,2,3,4,5,6,7,8,9,10,11,12]
-        plt.plot(month_order, thirty_year_avg_monthly['AVG_TEMP'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
+        plt.plot(month_order, thirty_year_avg_monthly['Prcp'], label='30-Year Avg (1991 - 2020)', color='black', linestyle=':', linewidth=5)
         plt.xlabel('Month', fontsize=14)
         plt.ylabel('Average Precipitation', fontsize=14)
         plt.title(f'Monthly Average Precipitation Across {years}'.format(years), fontsize=16)
