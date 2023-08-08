@@ -45,6 +45,7 @@ dpf.data_refresh(cache)
 dpf.get_clean_data(cache)
 
 # App main route + generic routing
+@app.route('/',methods=['GET'])
 @app.route('/temperature_analysis', methods=['GET','POST'])
 def display_temp():
      
@@ -451,6 +452,7 @@ def download_temp():
     
 
 # App main route + generic routing
+
 @app.route('/precipitation_analysis', methods=['GET','POST'])
 def display_precip():
     prcp_threshold = list(range(0,20))
@@ -849,7 +851,7 @@ def download_rain():
 
 
 
-@app.route('/', defaults={'path': 'index.html'})
+#@app.route('/', defaults={'path': 'index.html'})
 @app.route('/<path>')
 def index(path):
         
