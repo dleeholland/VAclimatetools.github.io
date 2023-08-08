@@ -192,7 +192,7 @@ def display_temp():
 
         ##### Render Template
         
-        return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
+        return render_template('home/temperature_analysis.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
                                num_columns=num_columns, stations = stations, counties = counties,date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
                                df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
                                df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,
@@ -356,7 +356,7 @@ def display_temp():
 
         ##### Render Template
         
-        return render_template('home/temperature_analysis copy.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
+        return render_template('home/temperature_analysis.html',max_date=max_date,min_date=min_date, df_values=df_values, labels=labels,
                                num_columns=num_columns, stations = stations, counties = counties,date_range = date_range, temp_max_axis = temp_max_axis,temp_min_axis = temp_min_axis,
                                df_values_avg=df_values_avg,df_values_max=df_values_max,df_values_min=df_values_min,
                                df_values_avg_monthly = df_values_avg_monthly, df_values_max_monthly=df_values_max_monthly,df_values_min_monthly=df_values_min_monthly,

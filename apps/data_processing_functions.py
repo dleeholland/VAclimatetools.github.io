@@ -20,6 +20,7 @@ def data_refresh(cache):
          refresh_data = False
 
     if refresh_data:
+        #TODO: This needs to be updated to the correct GCP instance / credentials
         credentials = service_account.Credentials.from_service_account_file(
                         os.path.join(app.root_path,'config','va-climate-change-ccd123ee3fbe.json'))
         client = bigquery.Client(credentials=credentials, project='va-climate-change')
